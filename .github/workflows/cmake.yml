@@ -1,0 +1,69 @@
+name: CMake
+on: [push]
+env:
+  BUILD_TYPE: Debug
+  LIBZIPPP_URL: https://github.com/ctabin/libzippp/releases/download/libzippp-v4.1-1.8.0/libzippp-4.1-1.8.0-bin.zip
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [g++, clang++]
+
+    steps:
+      - name: Checkout APM
+        uses: actions/checkout@v2
+
+      - name: Install packages
+        run: sudo apt install libcxxopts-dev libpugixml-dev doctest-dev
+
+      - name: Install LIBZIPPP
+        run: |
+          mkdir libzippp
+          curl -L "$LIBZIPPP_URL" -o libzippp/libzippp.zip
+          unzip libzippp/libzippp.zip -d libzippp/
+
+          cd libzippp/dist/linux/
+          sudo install -m 644 -D -t /usr/local/include/ libzippp.h
+          sudo install -m 644 -D -t /usr/local/lib/ libzippp.a
+
+      - name: Checkout C++ Requests
+        uses: actions/checkout@v2
+        with:
+          repository: whoshuu/cpr
+          ref: 1.6.2
+          path: cpr
+
+      - name: Install C++ Requests
+        working-directory: cpr
+        run: |
+          cmake . -DCPR_BUILD_TESTS=OFF
+          sudo make install
+
+      - name: Checkout Friendly CLI
+        uses: actions/checkout@v2
+        with:
+          repository: lem0nez/friendly-cli
+          ref: v1.2.0
+          path: fcli
+
+      - name: Install Friendly CLI
+        working-directory: fcli
+        run: |
+          cmake . -DBUILD_TESTING=OFF
+          sudo make install
+
+      - name: Configure CMake
+        env:
+          CXX: ${{matrix.compiler}}
+        run: cmake . -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
+
+      - name: Build
+        run: cmake --build .
+
+      - name: Test
+        run: ./test
+
+      - name: Install
+        run: sudo cmake --install .

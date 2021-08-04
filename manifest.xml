@@ -1,0 +1,29 @@
+<?xml version="1.0" encdoing="UTF-8"?>
+<manifest>
+    <tools>
+        <zip api="28" latest="true">
+            <archs>
+                <arch>aarch64</arch>
+                <arch>armel</arch>
+                <arch>i386</arch>
+                <arch>mips64el</arch>
+                <arch>mipsel</arch>
+                <arch>x86_64</arch>
+            </archs>
+        </zip>
+    </tools>
+    <tzdata>
+        <zip latest="true">2021a</zip>
+    </tzdata>
+    <build-tools>
+        <zip api="28" url="https://dl.google.com/android/repository/build-tools_r28.0.3-linux.zip">
+            <apksigner>android-9/lib/apksigner.jar</apksigner>
+            <d8>android-9/lib/d8.jar</d8>
+        </zip>
+    </build-tools>
+    <platforms>
+        <zip api="28" url="https://dl.google.com/android/repository/platform-28_r06.zip">
+            <android>android-9/android.jar</android>
+        </zip>
+    <platforms>
+</manifest>

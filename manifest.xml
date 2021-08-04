@@ -1,5 +1,9 @@
 <?xml version="1.0" encdoing="UTF-8"?>
 <manifest>
+    <assets>
+        <name>debug.jks</name>
+        <name>project-template.zip</name>
+    </assets>
     <tools>
         <zip api="28" latest="true">
             <archs>
@@ -15,6 +19,7 @@
     <tzdata>
         <zip latest="true">2021a</zip>
     </tzdata>
+
     <build-tools>
         <zip api="28" url="https://dl.google.com/android/repository/build-tools_r28.0.3-linux.zip">
             <apksigner>android-9/lib/apksigner.jar</apksigner>

@@ -2,7 +2,6 @@ name: CMake
 on: [push]
 env:
   BUILD_TYPE: Debug
-  LIBZIPPP_URL: https://github.com/ctabin/libzippp/releases/download/libzippp-v4.1-1.8.0/libzippp-4.1-1.8.0-bin.zip
 
 jobs:
   build:
@@ -15,18 +14,62 @@ jobs:
       - name: Checkout APM
         uses: actions/checkout@v2
 
-      - name: Install packages
-        run: sudo apt install libcxxopts-dev libpugixml-dev doctest-dev
+      - name: Checkout cxxopts
+        uses: actions/checkout@v2
+        with:
+          repository: jarro2783/cxxopts
+          ref: v2.2.1
+          path: cxxopts
 
-      - name: Install LIBZIPPP
+      - name: Install cxxopts
+        working-directory: cxxopts
         run: |
-          mkdir libzippp
-          curl -L "$LIBZIPPP_URL" -o libzippp/libzippp.zip
-          unzip libzippp/libzippp.zip -d libzippp/
+          cmake .
+          sudo cmake --install .
 
-          cd libzippp/dist/linux/
-          sudo install -m 644 -D -t /usr/local/include/ libzippp.h
-          sudo install -m 644 -D -t /usr/local/lib/ libzippp.a
+      - name: Checkout pugixml
+        uses: actions/checkout@v2
+        with:
+          repository: zeux/pugixml
+          ref: v1.11.4
+          path: pugixml
+
+      - name: Install pugixml
+        working-directory: pugixml
+        run: |
+          cmake .
+          sudo make install
+
+      - name: Checkout libzip
+        uses: actions/checkout@v2
+        with:
+          repository: nih-at/libzip
+          ref: v1.8.0
+          path: libzip
+
+      - name: Install libzip
+        working-directory: libzip
+        run: |
+          cmake . -DENABLE_OPENSSL=OFF -DENABLE_BZIP2=OFF -DENABLE_LZMA=OFF \
+                  -DBUILD_TOOLS=OFF -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF \
+                  -DBUILD_DOC=OFF
+          sudo make install
+
+      - name: Checkout libzippp
+        uses: actions/checkout@v2
+        with:
+          repository: ctabin/libzippp
+          ref: libzippp-v4.1-1.8.0
+          path: libzippp
+
+      - name: Install libzippp
+        working-directory: libzippp
+        run: |
+          cmake .
+          sudo make install
+
+      - name: Install cURL library
+        run: sudo apt install libcurl4-openssl-dev
 
       - name: Checkout C++ Requests
         uses: actions/checkout@v2
@@ -38,7 +81,7 @@ jobs:
       - name: Install C++ Requests
         working-directory: cpr
         run: |
-          cmake . -DCPR_BUILD_TESTS=OFF
+          cmake . -DCPR_FORCE_USE_SYSTEM_CURL=ON -DCPR_BUILD_TESTS=OFF
           sudo make install
 
       - name: Checkout Friendly CLI
@@ -54,16 +97,33 @@ jobs:
           cmake . -DBUILD_TESTING=OFF
           sudo make install
 
+      - name: Checkout doctest
+        uses: actions/checkout@v2
+        with:
+          repository: onqtam/doctest
+          ref: 2.4.6
+          path: doctest
+
+      - name: Install doctest
+        working-directory: doctest
+        run: |
+          cmake .
+          sudo cmake --install .
+
+      - name: Create build directory
+        run: cmake -E make_directory build/
+
       - name: Configure CMake
+        working-directory: build
         env:
           CXX: ${{matrix.compiler}}
-        run: cmake . -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
+        run: cmake .. -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
 
       - name: Build
-        run: cmake --build .
+        run: cmake --build build/
 
       - name: Test
-        run: ./test
+        run: ./build/test
 
       - name: Install
-        run: sudo cmake --install .
+        run: sudo cmake --install build/

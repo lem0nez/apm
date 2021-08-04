@@ -65,7 +65,7 @@ jobs:
       - name: Install libzippp
         working-directory: libzippp
         run: |
-          cmake .
+          cmake . -DLIBZIPPP_BUILD_TESTS=OFF
           sudo make install
 
       - name: Install cURL library

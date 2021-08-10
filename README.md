@@ -1,4 +1,4 @@
-![Debug build](https://img.shields.io/github/workflow/status/lem0nez/apm/CMake/dev?label=debug)
+![Debug build](https://github.com/lem0nez/apm/actions/workflows/cmake.yml/badge.svg?branch=dev)
 
 # Android Project Manager
 At this moment in development.

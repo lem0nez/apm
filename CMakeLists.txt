@@ -31,7 +31,7 @@ find_library(CPR_LIB cpr REQUIRED)
 find_package(PkgConfig REQUIRED)
 # Using IMPORTED_TARGET to create a target
 # that will be passed to target_link_libraries.
-pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.2)
+pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.3)
 
 set(INCLUDE_DIRS
   ${CPR_INCLUDE}
@@ -52,7 +52,8 @@ set(LIBS
 # -------------- #
 
 set(SOURCES
-  /dev/null
+  src/apm.cpp
+  src/config.cpp
 )
 
 # Compile the implementation for both apm and test executables.
@@ -61,6 +62,7 @@ target_include_directories(impl PUBLIC ${INCLUDE_DIRS})
 # Using INTERFACE as libraries must be linked with
 # final executables, not with the object library.
 target_link_libraries(impl INTERFACE ${LIBS})
+target_compile_definitions(impl PUBLIC APM_VERSION="${PROJECT_VERSION}")
 
 # -------------- #
 # apm executable #
@@ -78,11 +80,20 @@ install(TARGETS apm RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 # --------------- #
 
 set(TEST_SOURCES
+  test/internal/args.cpp
+  test/internal/env.cpp
+  test/internal/tmp_dir.cpp
   test/main.cpp
+
+  test/apm.cpp
+  test/config.cpp
+  test/enum_array.cpp
 )
 
 if(BUILD_TESTING)
   find_package(doctest 2.4 REQUIRED)
   add_executable(test ${TEST_SOURCES})
+
+  target_include_directories(test PRIVATE test/)
   target_link_libraries(test PRIVATE impl doctest::doctest)
 endif()

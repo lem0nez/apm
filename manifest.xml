@@ -28,7 +28,7 @@
     </build-tools>
     <platforms>
         <zip api="28" url="https://dl.google.com/android/repository/platform-28_r06.zip">
-            <android>android-9/android.jar</android>
+            <framework>android-9/android.jar</framework>
         </zip>
     <platforms>
 </manifest>

@@ -6,7 +6,6 @@
 
 #include <array>
 #include <exception>
-#include <iostream>
 #include <limits>
 #include <optional>
 #include <string>
@@ -19,22 +18,19 @@
 #include "apm.hpp"
 
 using namespace std;
+using namespace string_literals;
 using namespace cxxopts;
 
 using namespace fcli;
 using namespace fcli::literals;
 
-Apm::Apm(): m_opts("apm", "Android Project Manager") {
+Apm::Apm(error_condition& t_err): m_opts("apm", "Android Project Manager") {
   m_opts.add_options()
       ("colors", "Change number of colors in a palette (0, 8 or 256)",
           value<unsigned short>(), "NUM")
-      ("choose-theme", "Change default theme")
+      ("choose-theme", "Choose default theme")
       ("h,help", "Print the help message")
       ("version", "Print the versions information");
-}
-
-auto Apm::run(int& t_argc, char** t_argv) -> int {
-  using namespace string_literals;
 
   const optional term_colors{Terminal().find_out_supported_colors()};
   if (term_colors) {
@@ -46,9 +42,12 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
   } catch (const exception& e) {
     cerr << Text::format_message(Text::Message::ERROR,
             "Couldn't load configuration: "s + e.what()) << endl;
-    return EXIT_FAILURE;
+    t_err = {EXIT_FAILURE, generic_category()};
+    return;
   }
+}
 
+auto Apm::run(int& t_argc, char** t_argv) -> int {
   // Using a pointer, since ParseResult doesn't have default constructor.
   unique_ptr<const ParseResult> parse_result;
   try {
@@ -63,33 +62,10 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
     return EXIT_FAILURE;
   }
 
-  if (parse_result->arguments().empty() || parse_result->count("help") != 0U) {
-    cout << m_opts.help() << flush;
-    return EXIT_SUCCESS;
-  }
-
   if (parse_result->count("colors") != 0U) {
-    const auto colors{(*parse_result)["colors"].as<unsigned short>()};
-    switch (colors) {
-      case 0U: {
-        Terminal::uncache_colors_support();
-        break;
-      }
-      case 8U: {
-        Terminal::cache_colors_support(Terminal::ColorsSupport::HAS_8_COLORS);
-        break;
-      }
-      case 256U: {
-        Terminal::cache_colors_support(Terminal::ColorsSupport::HAS_256_COLORS);
-        break;
-      }
-      default: {
-        cerr << "Wrong number of colors!"_err << endl;
-        cout << "Possible values: "
-                "<b>0<r> to completely disable text styling, "
-                "<b>8<r> to use terminal's palette and <b>256<r>"_note << endl;
-        return EXIT_FAILURE;
-      }
+    const auto num{(*parse_result)["colors"].as<unsigned short>()};
+    if (!set_colors(num)) {
+      return EXIT_FAILURE;
     }
   }
 
@@ -103,10 +79,36 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
     return EXIT_SUCCESS;
   }
 
+  cout << m_opts.help() << flush;
   return EXIT_SUCCESS;
 }
 
-void Apm::request_theme() {
+auto Apm::set_colors(const unsigned short t_num) -> bool {
+  switch (t_num) {
+    case 0U: {
+      Terminal::uncache_colors_support();
+      break;
+    }
+    case 8U: {
+      Terminal::cache_colors_support(Terminal::ColorsSupport::HAS_8_COLORS);
+      break;
+    }
+    case 256U: {
+      Terminal::cache_colors_support(Terminal::ColorsSupport::HAS_256_COLORS);
+      break;
+    }
+    default: {
+      cerr << "Wrong number of colors!"_err << endl;
+      cout << "Possible values: "
+              "<b>0<r> to completely disable text styling, "
+              "<b>8<r> to use terminal's palette and <b>256<r>"_note << endl;
+      return false;
+    }
+  }
+  return true;
+}
+
+void Apm::request_theme(istream& t_istream) {
   using theme_t = pair<Theme::Name, string>;
   // Using array of pairs to keep items order.
   const array<theme_t, 4U> themes{{
@@ -130,7 +132,7 @@ void Apm::request_theme() {
   }
 
   cout << "Choose a theme (enter <b>0<r> to abort):"_fmt << endl;
-  for (size_t i{0U}; i != themes.size(); ++i) {
+  for (size_t i{}; i != themes.size(); ++i) {
     const auto& theme{themes.at(i)};
 
     cout << "  " + to_string(i + 1U) + ". " + theme.second << flush;
@@ -149,13 +151,13 @@ void Apm::request_theme() {
   size_t num{};
   while (true) {
     cout << "number> <b>"_fmt << flush;
-    cin >> num;
+    t_istream >> num;
     cout << "<r>"_fmt << flush;
 
-    if (!cin) {
+    if (!t_istream) {
       cerr << "Invalid input! Try again"_err << endl;
-      cin.clear();
-      cin.ignore(numeric_limits<streamsize>::max(), '\n');
+      t_istream.clear();
+      t_istream.ignore(numeric_limits<streamsize>::max(), '\n');
     } else if (num > themes.size()) {
       cerr << "Wrong choice! Try again"_err << endl;
     } else {

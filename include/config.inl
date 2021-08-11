@@ -6,7 +6,7 @@
 
 #include <string>
 
-template<class T, class V>
+template<typename T, typename V>
 // V type already has the const specifier.
 auto Config::apply(const Key t_key, V t_val, const bool t_save_file) -> bool {
   using namespace std;
@@ -44,7 +44,8 @@ auto Config::apply(const Key t_key, V t_val, const bool t_save_file) -> bool {
   return true;
 }
 
-template<class T> auto Config::get(const Key t_key) const -> std::optional<T> {
+template<typename T>
+auto Config::get(const Key t_key) const -> std::optional<T> {
   using namespace std;
   optional<T> val;
 

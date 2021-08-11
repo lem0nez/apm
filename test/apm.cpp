@@ -8,20 +8,21 @@
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include <system_error>
 
 #include <doctest/doctest.h>
 
 #include "apm.hpp"
+#include "internal/alt_stream.hpp"
 #include "internal/args.hpp"
-#include "internal/buf_restorer.hpp"
 #include "internal/env.hpp"
 #include "internal/tmp_dir.hpp"
 
 using namespace std;
 
 TEST_CASE("Pass arguments") {
-  TmpDir tmp_dir;
-  Env::setup(tmp_dir.get_entry());
+  TmpDir home_dir;
+  Env::setup(home_dir.get_entry());
 
   array<Args, 6U> valid_args{{
     {{}},
@@ -38,23 +39,39 @@ TEST_CASE("Pass arguments") {
     {{}, "--help="}
   }};
 
-  BufRestorer
-      cout_restorer(cout),
-      cerr_restorer(cerr);
-  ostringstream cout_oss, cerr_oss;
-  cout.rdbuf(cout_oss.rdbuf());
-  cerr.rdbuf(cerr_oss.rdbuf());
+  AltStream
+      alt_cout(cout),
+      alt_cerr(cerr);
+
+  error_condition err;
+  Apm apm(err);
+  REQUIRE_FALSE(err);
 
   for (auto& a : valid_args) {
-    Apm apm;
     REQUIRE(apm.run(a.get_argc(), a.get_argv()) == EXIT_SUCCESS);
-    REQUIRE(cerr_oss.tellp() == streampos(0));
+    REQUIRE((*alt_cerr).tellp() == streampos(0));
   }
 
   for (auto& a : invalid_args) {
-    Apm apm;
     REQUIRE(apm.run(a.get_argc(), a.get_argv()) == EXIT_FAILURE);
-    REQUIRE(cerr_oss.tellp() > streamsize(0));
-    cerr_oss.str({});
+    REQUIRE((*alt_cerr).tellp() > streampos(0));
+    (*alt_cerr).str({});
   }
+}
+
+TEST_CASE("Choose theme") {
+  const TmpDir home_dir;
+  Env::setup(home_dir.get_entry());
+
+  istringstream alt_cin;
+  AltStream
+      alt_cout(cout),
+      alt_cerr(cerr);
+  error_condition err;
+  Apm apm(err);
+
+  alt_cin.str("0\n");
+  CHECK_NOTHROW(apm.request_theme(alt_cin));
+  alt_cin.str("1\n");
+  CHECK_NOTHROW(apm.request_theme(alt_cin));
 }

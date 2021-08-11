@@ -22,6 +22,6 @@ public:
 private:
   int m_argc;
   std::vector<std::string> m_str_argv;
-  // Stores pointers to the strings data of the previous container.
+  // Stores pointers to strings data of the previous container.
   std::vector<char*> m_argv;
 };

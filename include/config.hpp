@@ -35,10 +35,12 @@ public:
 
   // V type: don's pass a value of fundamental type by reference as
   // it slower than passing by value. Function returns false on fail.
-  template<class T,
-      class V = std::conditional_t<std::is_fundamental_v<T>, const T, const T&>>
+  template<typename T, typename V =
+      std::conditional_t<std::is_fundamental_v<T>, const T, const T&>>
   auto apply(Key key, V val, bool save_file = true) -> bool;
-  template<class T> [[nodiscard]] auto get(Key key) const -> std::optional<T>;
+
+  template<typename T>
+  [[nodiscard]] auto get(Key key) const -> std::optional<T>;
 
   // NOLINTNEXTLINE(modernize-use-nodiscard)
   inline auto save() const -> bool
@@ -52,9 +54,9 @@ private:
 
   // Since this is a constexpr function, we can return a string_view object.
   [[nodiscard]] static constexpr auto get_key_name(const Key key) {
-    return EnumArray<Key, std::string_view>({
+    return EnumArray<Key, std::string_view>{
       "theme"
-    }).get(key);
+    }.get(key);
   }
 
   std::filesystem::path m_file_path;

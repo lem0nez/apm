@@ -10,14 +10,15 @@
 #include <utility>
 
 // E is enumerator class and V is values type.
-template<class E, class V,
+template<typename E, typename V,
          std::size_t size = static_cast<std::size_t>(E::_COUNT)>
 // Wrapper around standard array, where key is a field of enumerator class.
 class EnumArray {
   using arr_t = std::array<V, size>;
 
 public:
-  constexpr explicit EnumArray(arr_t other): m_arr(std::move(other)) {}
+  template<typename... Vals> constexpr explicit EnumArray(Vals&&... vals):
+      m_arr{std::forward<V>(vals)...} {}
   [[nodiscard]] constexpr auto get(const E elem) const -> const V&
       { return m_arr.at(static_cast<std::size_t>(elem)); }
 

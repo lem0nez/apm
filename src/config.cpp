@@ -59,8 +59,7 @@ Config::Config() {
   const auto parse_result{m_doc.load_file(m_file_path.c_str())};
   if (parse_result.status != status_ok) {
     throw runtime_error("failed to parse file \"" + m_file_path.string() +
-                        "\" (" + parse_result.description() +
-                        "); delete or fix it");
+        "\" (" + parse_result.description() + "); delete or fix it");
   }
 
   m_root_node = m_doc.child(root_node_name.c_str());

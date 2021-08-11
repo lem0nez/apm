@@ -4,7 +4,6 @@
  * Licensed under the Apache License, Version 2.0
  */
 
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -13,6 +12,7 @@
 #include <fcli/theme.hpp>
 
 #include "config.hpp"
+#include "internal/env.hpp"
 #include "internal/tmp_dir.hpp"
 
 using namespace std;
@@ -20,12 +20,20 @@ using namespace std;
 TEST_CASE("Constructor") {
   using namespace filesystem;
 
-  unsetenv("XDG_CONFIG_HOME");
-  unsetenv("HOME");
+  Env::unset("XDG_CONFIG_HOME");
+  Env::unset("HOME");
   CHECK_THROWS_AS(Config(), runtime_error);
 
+  {
+    const TmpDir home_dir;
+    permissions(home_dir.get_entry(), perms::all, perm_options::remove);
+    Env::set("HOME", home_dir.str());
+    CHECK_THROWS_AS(Config(), filesystem_error);
+  }
+  Env::unset("HOME");
+
   const TmpDir config_dir;
-  setenv("XDG_CONFIG_HOME", config_dir.c_str(), 1);
+  Env::set("XDG_CONFIG_HOME", config_dir.str());
 
   {
     const Config config;
@@ -33,21 +41,22 @@ TEST_CASE("Constructor") {
     REQUIRE_FALSE(filesystem::is_empty(config_dir.get_entry()));
   }
 
-  for (const auto& e : recursive_directory_iterator(config_dir.get_entry())) {
+  for (const auto& e : directory_iterator(config_dir.get_entry())) {
     if (e.is_regular_file()) {
       // Make a XML file not valid.
       ofstream(e.path());
     }
   }
+
   CHECK_THROWS_AS(Config(), runtime_error);
+  Env::unset("XDG_CONFIG_HOME");
 }
 
 TEST_CASE("Apply theme") {
   using namespace fcli;
 
   const TmpDir home_dir;
-  unsetenv("XDG_CONFIG_HOME");
-  setenv("HOME", home_dir.c_str(), 1);
+  Env::setup(home_dir.get_entry());
 
   // Destructor should save changes to a file.
   REQUIRE(Config().apply<Theme::Name>(

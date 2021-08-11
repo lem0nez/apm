@@ -8,7 +8,9 @@
 
 #include <cstdint>
 #include <cxxopts.hpp>
+#include <iostream>
 #include <memory>
+#include <system_error>
 
 #include "config.hpp"
 
@@ -23,11 +25,16 @@ public:
     MIPS
   };
 
-  Apm();
+  Apm() = delete;
+  // If the constructor reproduced a error, then
+  // NO operations on an instance must be performed.
+  explicit Apm(std::error_condition&);
   // Passing argc by reference as cxxopts will remove all recognized arguments.
   auto run(int& argc, char** argv) -> int;
 
-  void request_theme();
+  // Returns false if wrong number is passed.
+  static auto set_colors(unsigned short num) -> bool;
+  void request_theme(std::istream& = std::cin);
   void print_versions() const;
 
   [[nodiscard]] static constexpr auto get_arch() -> Arch {
@@ -52,5 +59,5 @@ private:
   cxxopts::Options m_opts;
   // Using a pointer, since exceptions, that
   // default constructor throws, must be caught.
- std::unique_ptr<Config> m_config;
+  std::unique_ptr<Config> m_config;
 };

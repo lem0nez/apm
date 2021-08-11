@@ -5,15 +5,22 @@
  */
 
 #pragma once
+
 #include <filesystem>
+#include <string_view>
 
 class Env {
 public:
-  // Sets base directory for the program so
+  // Sets home directory for a program so
   // as not to pollute the user environment.
-  static void setup(const std::filesystem::directory_entry& base_dir);
+  static void setup(const std::filesystem::directory_entry& home_dir);
+
+  // Wrappers around setenv and unsetenv that throw exceptions.
+  static void set(std::string_view var_name, std::string_view val);
+  static void unset(std::string_view var_name);
 
 private:
   static void unset_xdg_vars();
+  // Environment variables should be unset only once for a program.
   static inline bool s_xdg_vars_unset;
 };

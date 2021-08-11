@@ -23,10 +23,10 @@ public:
   auto operator=(TmpDir&&) -> TmpDir& = default;
 
   [[nodiscard]] inline auto get_entry() const { return *m_dir; }
-  [[nodiscard]] inline auto c_str() const { return m_dir->path().c_str(); }
+  [[nodiscard]] inline auto str() const { return m_dir->path().string(); }
 
 private:
-  // ‘X’ characters will be replaced by mkdtemp.
+  // ‘X’ characters will be replaced by the mkdtemp function.
   static constexpr std::string_view NAME_TEMPLATE{"apm-test_XXXXXX"};
   std::shared_ptr<std::filesystem::directory_entry> m_dir;
 };

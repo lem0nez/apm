@@ -9,6 +9,6 @@
 
 TEST_CASE("Get a value") {
   enum class Number{ONE, TWO, THREE, _COUNT};
-  constexpr EnumArray<Number, unsigned short> numbers({1U, 2U, 3U});
+  constexpr EnumArray<Number, unsigned short> numbers{1U, 2U, 3U};
   CHECK(numbers.get(Number::TWO) == 2U);
 }

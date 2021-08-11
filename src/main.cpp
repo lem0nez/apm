@@ -4,8 +4,18 @@
  * Licensed under the Apache License, Version 2.0
  */
 
+#include <cstdlib>
+#include <system_error>
+
 #include "apm.hpp"
 
 auto main(int argc, char* argv[]) -> int {
-  return Apm().run(argc, argv);
+  using namespace std;
+  error_condition err;
+  Apm apm(err);
+
+  if (err) {
+    return err.value();
+  }
+  return apm.run(argc, argv);
 }

@@ -19,6 +19,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Dependencies #
 # ------------ #
 
+# Set flags for both preprocessor and linker.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 find_package(OpenSSL 1.1.1 COMPONENTS Crypto REQUIRED)
 find_package(cxxopts 2.2 REQUIRED)
 find_package(pugixml 1.11 REQUIRED)
@@ -41,6 +45,7 @@ set(INCLUDE_DIRS
 
 set(LIBS
   stdc++fs
+  Threads::Threads
   OpenSSL::Crypto
   cxxopts::cxxopts
   pugixml::pugixml

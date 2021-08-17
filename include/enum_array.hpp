@@ -7,11 +7,17 @@
 #pragma once
 
 #include <array>
+#include <type_traits>
 #include <utility>
 
+// Returns number of enumerator fields.
+template<typename T> constexpr auto size() {
+  static_assert(std::is_enum_v<T>, "T must be enumeration");
+  return static_cast<std::size_t>(T::_COUNT);
+}
+
 // E is enumerator class and V is values type.
-template<typename E, typename V,
-         std::size_t size = static_cast<std::size_t>(E::_COUNT)>
+template<typename E, typename V, std::size_t size = size<E>()>
 // Wrapper around standard array, where key is a field of enumerator class.
 class EnumArray {
   using arr_t = std::array<V, size>;

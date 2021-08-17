@@ -19,8 +19,14 @@ public:
   static void set(std::string_view var_name, std::string_view val);
   static void unset(std::string_view var_name);
 
+  static inline void set_sdk_home(const std::filesystem::directory_entry& dir)
+      { s_sdk_home = dir; }
+  [[nodiscard]] static inline auto get_sdk_home() { return s_sdk_home; }
+
 private:
   static void unset_xdg_vars();
   // Environment variables should be unset only once for a program.
   static inline bool s_xdg_vars_unset;
+
+  static inline std::filesystem::directory_entry s_sdk_home;
 };

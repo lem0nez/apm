@@ -6,27 +6,20 @@
 
 #pragma once
 
-#include <cstdint>
-#include <cxxopts.hpp>
 #include <iostream>
 #include <memory>
 #include <system_error>
 
+#include <cxxopts.hpp>
+#include <fcli/terminal.hpp>
+
 #include "config.hpp"
+#include "sdk.hpp"
 
 class Apm {
 public:
-  enum class Arch {
-    X86_64,
-    I386,
-    AARCH64,
-    ARM,
-    MIPS64,
-    MIPS
-  };
-
   Apm() = delete;
-  // If the constructor reproduced a error, then
+  // If the constructor reproduce a error, then
   // NO operations on an instance must be performed.
   explicit Apm(std::error_condition&);
   // Passing argc by reference as cxxopts will remove all recognized arguments.
@@ -37,27 +30,11 @@ public:
   void request_theme(std::istream& = std::cin);
   void print_versions() const;
 
-  [[nodiscard]] static constexpr auto get_arch() -> Arch {
-#ifdef __x86_64__
-    return Arch::X86_64;
-#elif defined(__i386__)
-    return Arch::I386;
-#elif defined(__aarch64__)
-    return Arch::AARCH64;
-#elif defined(__arm__)
-    return Arch::ARM;
-#elif defined(__mips64) || defined(__mips__) && INTPTR_MAX == INT64_MAX
-    return Arch::MIPS64;
-#elif defined(__mips__)
-    return Arch::MIPS;
-#else
-#error Unsupported architecture
-#endif
-  }
-
 private:
   cxxopts::Options m_opts;
-  // Using a pointer, since exceptions, that
-  // default constructor throws, must be caught.
-  std::unique_ptr<Config> m_config;
+  fcli::Terminal m_term;
+  // Using pointers, since exceptions, that
+  // default constructors throw, must be caught.
+  std::shared_ptr<Config> m_config;
+  std::unique_ptr<Sdk> m_sdk;
 };

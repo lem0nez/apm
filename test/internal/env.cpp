@@ -45,7 +45,6 @@ void Env::unset_xdg_vars() {
   if (s_xdg_vars_unset) {
     return;
   }
-
   for (const auto& n : names) {
     unset(n);
   }

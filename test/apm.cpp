@@ -11,8 +11,8 @@
 #include <system_error>
 
 #include <doctest/doctest.h>
-
 #include "apm.hpp"
+
 #include "internal/alt_stream.hpp"
 #include "internal/args.hpp"
 #include "internal/env.hpp"
@@ -20,7 +20,7 @@
 
 using namespace std;
 
-TEST_CASE("Pass arguments") {
+TEST_CASE("Program's arguments") {
   TmpDir home_dir;
   Env::setup(home_dir.get_entry());
 
@@ -59,19 +59,23 @@ TEST_CASE("Pass arguments") {
   }
 }
 
-TEST_CASE("Choose theme") {
+TEST_CASE("Choose a theme") {
   const TmpDir home_dir;
   Env::setup(home_dir.get_entry());
 
-  istringstream alt_cin;
   AltStream
       alt_cout(cout),
       alt_cerr(cerr);
+  AltStream alt_cin(cin);
+
+  constexpr array choices{"0\n", "1\n"};
   error_condition err;
   Apm apm(err);
 
-  alt_cin.str("0\n");
-  CHECK_NOTHROW(apm.request_theme(alt_cin));
-  alt_cin.str("1\n");
-  CHECK_NOTHROW(apm.request_theme(alt_cin));
+  for (const auto& c : choices) {
+    Args args{{}, "--choose-theme"};
+    (*alt_cin).str(c);
+    REQUIRE(apm.run(args.get_argc(), args.get_argv()) == EXIT_SUCCESS);
+  }
+  CHECK((*alt_cerr).tellp() == streampos(0));
 }

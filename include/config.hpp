@@ -20,6 +20,7 @@ class Config {
 public:
   enum class Key {
     THEME,
+    SDK,
     _COUNT
   };
 
@@ -34,7 +35,7 @@ public:
   auto operator=(Config&&) -> Config& = default;
 
   // V type: don's pass a value of fundamental type by reference as
-  // it slower than passing by value. Function returns false on fail.
+  // it slower than passing by value. Function returns false on failure.
   template<typename T, typename V =
       std::conditional_t<std::is_fundamental_v<T>, const T, const T&>>
   auto apply(Key key, V val, bool save_file = true) -> bool;
@@ -55,7 +56,7 @@ private:
   // Since this is a constexpr function, we can return a string_view object.
   [[nodiscard]] static constexpr auto get_key_name(const Key key) {
     return EnumArray<Key, std::string_view>{
-      "theme"
+      "theme", "sdk"
     }.get(key);
   }
 

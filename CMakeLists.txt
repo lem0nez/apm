@@ -19,6 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Dependencies #
 # ------------ #
 
+find_package(OpenSSL 1.1.1 COMPONENTS Crypto REQUIRED)
 find_package(cxxopts 2.2 REQUIRED)
 find_package(pugixml 1.11 REQUIRED)
 find_package(libzippp 3.0 REQUIRED)
@@ -40,6 +41,7 @@ set(INCLUDE_DIRS
 
 set(LIBS
   stdc++fs
+  OpenSSL::Crypto
   cxxopts::cxxopts
   pugixml::pugixml
   libzippp::libzippp
@@ -54,6 +56,8 @@ set(LIBS
 set(SOURCES
   src/apm.cpp
   src/config.cpp
+  src/sdk.cpp
+  src/utils.cpp
 )
 
 # Compile the implementation for both apm and test executables.
@@ -63,6 +67,11 @@ target_include_directories(impl PUBLIC ${INCLUDE_DIRS})
 # final executables, not with the object library.
 target_link_libraries(impl INTERFACE ${LIBS})
 target_compile_definitions(impl PUBLIC APM_VERSION="${PROJECT_VERSION}")
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # Preserve all debug symbols to improve debugging with GDB.
+  target_compile_options(impl PUBLIC -fno-limit-debug-info)
+endif()
 
 # -------------- #
 # apm executable #
@@ -87,7 +96,9 @@ set(TEST_SOURCES
 
   test/apm.cpp
   test/config.cpp
-  test/enum_array.cpp
+  test/sdk.cpp
+  test/tmp_file.cpp
+  test/utils.cpp
 )
 
 if(BUILD_TESTING)

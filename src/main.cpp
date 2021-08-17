@@ -10,10 +10,8 @@
 #include "apm.hpp"
 
 auto main(int argc, char* argv[]) -> int {
-  using namespace std;
-  error_condition err;
+  std::error_condition err;
   Apm apm(err);
-
   if (err) {
     return err.value();
   }

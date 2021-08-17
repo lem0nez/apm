@@ -11,7 +11,6 @@
 #include <string>
 #include <utility>
 
-#include <fcli/terminal.hpp>
 #include <fcli/text.hpp>
 #include <fcli/theme.hpp>
 
@@ -19,29 +18,39 @@
 
 using namespace std;
 using namespace string_literals;
-using namespace cxxopts;
 
+using namespace cxxopts;
 using namespace fcli;
 using namespace fcli::literals;
 
 Apm::Apm(error_condition& t_err): m_opts("apm", "Android Project Manager") {
   m_opts.add_options()
+      ("s,set-up", "Download and install SDK")
       ("colors", "Change number of colors in a palette (0, 8 or 256)",
           value<unsigned short>(), "NUM")
       ("choose-theme", "Choose default theme")
       ("h,help", "Print the help message")
       ("version", "Print the versions information");
 
-  const optional term_colors{Terminal().find_out_supported_colors()};
+  const optional term_colors{m_term.find_out_supported_colors()};
   if (term_colors) {
     Terminal::cache_colors_support(*term_colors);
   }
 
   try {
-    m_config = make_unique<Config>();
+    m_config = make_shared<Config>();
   } catch (const exception& e) {
     cerr << Text::format_message(Text::Message::ERROR,
             "Couldn't load configuration: "s + e.what()) << endl;
+    t_err = {EXIT_FAILURE, generic_category()};
+    return;
+  }
+
+  try {
+    m_sdk = make_unique<Sdk>();
+  } catch (const exception& e) {
+    cerr << Text::format_message(Text::Message::ERROR,
+            "Couldn't prepare SDK: "s + e.what()) << endl;
     t_err = {EXIT_FAILURE, generic_category()};
     return;
   }
@@ -69,8 +78,16 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
     }
   }
 
-  if (parse_result->count("version") != 0U) {
-    print_versions();
+  const optional installed_sdk{m_config->get<unsigned short>(Config::Key::SDK)};
+  if (parse_result->count("set-up") != 0U) {
+    try {
+      return m_sdk->install(m_config, m_term,
+                            installed_sdk ? *installed_sdk : 0U);
+    } catch (const exception& e) {
+      cerr << Text::format_message(Text::Message::ERROR,
+              "Couldn't set up SDK: "s + e.what()) << endl;
+      return EXIT_FAILURE;
+    }
     return EXIT_SUCCESS;
   }
 
@@ -79,7 +96,16 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
     return EXIT_SUCCESS;
   }
 
+  if (parse_result->count("version") != 0U) {
+    print_versions();
+    return EXIT_SUCCESS;
+  }
+
   cout << m_opts.help() << flush;
+  if (parse_result->count("help") == 0U && !installed_sdk) {
+    cout << "SDK not installed. "
+            "Use <b>-s<r> (<b>--set-up<r>) option to install it"_warn << endl;
+  }
   return EXIT_SUCCESS;
 }
 
@@ -98,10 +124,9 @@ auto Apm::set_colors(const unsigned short t_num) -> bool {
       break;
     }
     default: {
-      cerr << "Wrong number of colors!"_err << endl;
-      cout << "Possible values: "
+      cerr << "Wrong number of colors! Possible values: "
               "<b>0<r> to completely disable text styling, "
-              "<b>8<r> to use terminal's palette and <b>256<r>"_note << endl;
+              "<b>8<r> to use terminal's palette and <b>256<r>"_err << endl;
       return false;
     }
   }
@@ -166,18 +191,23 @@ void Apm::request_theme(istream& t_istream) {
   }
 
   if (num == 0U) {
-    cout << "Aborted"_warn << endl;
+    return;
+  }
+
+  const auto chosen_theme{themes.at(num - 1U).first};
+  if (m_config->apply<Theme::Name>(Config::Key::THEME, chosen_theme)) {
+    cout << "Preference is saved"_note << endl;
   } else {
-    const auto choosed_theme{themes.at(num - 1U).first};
-    if (m_config->apply<Theme::Name>(Config::Key::THEME, choosed_theme)) {
-      cout << "Preference is saved"_note << endl;
-    } else {
-      cerr << "Couldn't apply theme!"_err << endl;
-    }
+    cerr << "Couldn't apply theme"_err << endl;
   }
 }
 
-// TODO: print API version of installed SDK.
 void Apm::print_versions() const {
-  cout << "APM version: ~b~" APM_VERSION "<r>"_fmt << endl;
+  cout << "APM version: <b>" APM_VERSION "<r>"_fmt << endl;
+
+  const optional sdk_api{m_config->get<unsigned short>(Config::Key::SDK)};
+  if (sdk_api) {
+    cout << Text::format_copy(
+            "API of SDK: <b>" + to_string(*sdk_api) + "<r>") << endl;
+  }
 }

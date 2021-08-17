@@ -20,7 +20,7 @@ auto Config::apply(const Key t_key, V t_val, const bool t_save_file) -> bool {
     val_str = t_val;
   }
 
-  if (t_key == Key::THEME) {
+  if constexpr (is_same_v<T, fcli::Theme::Name>) {
     try {
       fcli::Theme::set_theme(t_val);
     } catch (...) {
@@ -55,16 +55,15 @@ auto Config::get(const Key t_key) const -> std::optional<T> {
 
     if constexpr (is_enum_v<T>) {
       val = static_cast<T>(text.as_int());
-    } else if constexpr (is_floating_point_v<T>) {
-      val = text.as_double();
     } else if constexpr (is_same_v<T, bool>) {
       val = text.as_bool();
-    } else if constexpr (is_same_v<T, int>) {
+    } else if constexpr (is_same_v<T, int> || is_same_v<T, short>) {
       val = text.as_int();
-    } else if constexpr (is_same_v<T, unsigned>) {
+    } else if constexpr (is_same_v<T, unsigned> ||
+                         is_same_v<T, unsigned short>) {
       val = text.as_uint();
     } else {
-      val = text.as_string();
+      val = text.get();
     }
   }
   return val;

@@ -7,17 +7,17 @@
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
-
-#include <doctest/doctest.h>
 #include <fcli/theme.hpp>
 
+#include <doctest/doctest.h>
 #include "config.hpp"
+
 #include "internal/env.hpp"
 #include "internal/tmp_dir.hpp"
 
 using namespace std;
 
-TEST_CASE("Constructor") {
+TEST_CASE("Config constructor") {
   using namespace filesystem;
 
   Env::unset("XDG_CONFIG_HOME");
@@ -52,7 +52,7 @@ TEST_CASE("Constructor") {
   Env::unset("XDG_CONFIG_HOME");
 }
 
-TEST_CASE("Apply theme") {
+TEST_CASE("Apply configurations") {
   using namespace fcli;
 
   const TmpDir home_dir;
@@ -63,4 +63,9 @@ TEST_CASE("Apply theme") {
           Config::Key::THEME, Theme::Name::MATERIAL_LIGHT, false));
   CHECK(Config().get<Theme::Name>(Config::Key::THEME) ==
         Theme::Name::MATERIAL_LIGHT);
+
+  Config config;
+  // Try another key and value type.
+  REQUIRE(config.apply<unsigned short>(Config::Key::SDK, 1U));
+  CHECK(config.get<unsigned short>(Config::Key::SDK) == 1U);
 }

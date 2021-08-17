@@ -16,8 +16,8 @@ using namespace std;
 
 Config::Config() {
   using namespace filesystem;
-  using namespace pugi;
   using namespace fcli;
+  using namespace pugi;
 
   auto env_dir{getenv("XDG_CONFIG_HOME")};
   path dir;
@@ -36,15 +36,15 @@ Config::Config() {
   // If directories already exist, the function does nothing.
   create_directories(dir, err);
   if (err) {
-    throw filesystem_error("failed to create directory \"" +
-                           dir.string() + '"', err);
+    throw filesystem_error(
+        "failed to create directory \"" + dir.string() + '"', err);
   }
 
   m_file_path = dir / FILE_NAME;
   const auto file_exists{exists(m_file_path, err)};
   if (err) {
-    throw filesystem_error("failed to check if file \"" +
-                           m_file_path.string() + "\" exists", err);
+    throw filesystem_error(
+        "failed to check if file \"" + m_file_path.string() + "\" exists", err);
   }
 
   const string root_node_name(ROOT_NODE_NAME);
@@ -66,8 +66,8 @@ Config::Config() {
   if (!m_root_node) {
     m_root_node = m_doc.append_child(root_node_name.c_str());
     if (!m_root_node) {
-      throw runtime_error("failed to create root node \"" +
-                          root_node_name + '"');
+      throw runtime_error(
+          "failed to create root node \"" + root_node_name + '"');
     }
   }
 

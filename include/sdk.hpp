@@ -80,7 +80,6 @@ private:
 
   static constexpr std::string_view
       REPO_RAW_URL_PREFIX{"https://github.com/lem0nez/apm/raw/data/"};
-  static constexpr unsigned short INSTALL_MAX_PROGRESS_WIDTH{60U};
 
   // Returns empty document on failure.
   [[nodiscard]] static auto download_manifest(

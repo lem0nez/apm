@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <stdexcept>
 
 #include <cpr/api.h>
 #include <cpr/callback.h>
@@ -189,4 +190,20 @@ auto Utils::calc_sha256(const filesystem::path& t_path) -> string {
     result_oss << setw(2) << static_cast<unsigned short>(c);
   }
   return result_oss.str();
+}
+
+auto Utils::get_term_width(
+    const Terminal& t_term, const unsigned short t_max_width,
+    const unsigned short t_fall_back_width) -> unsigned short {
+
+  if (s_term_width_status == TermWidth::NOT_CHECKED) {
+    try {
+      static_cast<void>(t_term.get_width());
+      s_term_width_status = TermWidth::AVAILABLE;
+    } catch (const runtime_error&) {
+      s_term_width_status = TermWidth::NOT_AVAILABLE;
+    }
+  }
+  return s_term_width_status == TermWidth::AVAILABLE ?
+         min(t_term.get_width(), t_max_width) : t_fall_back_width;
 }

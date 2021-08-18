@@ -4,7 +4,6 @@
  * Licensed under the Apache License, Version 2.0
  */
 
-#include <algorithm>
 #include <array>
 #include <cstdlib>
 #include <functional>
@@ -62,8 +61,14 @@ auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
     }
   }
 
-  const auto manifest{download_manifest(
-      min(t_term.get_width(), INSTALL_MAX_PROGRESS_WIDTH))};
+  const auto get_progress_width{[&t_term] {
+    constexpr unsigned short
+        MAX_WIDTH{60U},
+        FALL_BACK_WIDTH{20U};
+    return Utils::get_term_width(t_term, MAX_WIDTH, FALL_BACK_WIDTH);
+  }};
+
+  const auto manifest{download_manifest(get_progress_width())};
   if (!manifest.document_element()) {
     return EXIT_FAILURE;
   }
@@ -86,8 +91,7 @@ auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
   };
   for (const auto f : api_dependent_install_funcs) {
     // Retrieve terminal width every time, since it can be changed by the user.
-    if (!invoke(f, this, manifest, api_str, tmp_file,
-                min(t_term.get_width(), INSTALL_MAX_PROGRESS_WIDTH))) {
+    if (!invoke(f, this, manifest, api_str, tmp_file, get_progress_width())) {
       return EXIT_FAILURE;
     }
     if (!tmp_ofs.is_open()) {
@@ -121,12 +125,10 @@ auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
   }
 
   if (install_api_independent_files) {
-    if (!install_tzdata(manifest, tmp_file,
-        min(t_term.get_width(), INSTALL_MAX_PROGRESS_WIDTH))) {
+    if (!install_tzdata(manifest, tmp_file, get_progress_width())) {
       return EXIT_FAILURE;
     }
-    if (!install_assets(manifest,
-        min(t_term.get_width(), INSTALL_MAX_PROGRESS_WIDTH))) {
+    if (!install_assets(manifest, get_progress_width())) {
       return EXIT_FAILURE;
     }
   }
@@ -158,7 +160,6 @@ auto Sdk::download_manifest(
     return {};
   }
 
-  progress = "Processing manifest";
   xml_document doc;
   const auto parse_result{doc.load_string(response.text.c_str())};
 
@@ -542,7 +543,6 @@ auto Sdk::install_assets(const xml_document& t_manifest,
 
   for (const auto& n : xpath_nodes) {
     const auto node{n.node()};
-    progress = "Preparing an asset";
     // Progress hides by the finish function at the end of the loop.
     progress.show();
 

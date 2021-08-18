@@ -16,7 +16,9 @@
 
 #include <cpr/cprtypes.h>
 #include <cpr/response.h>
+
 #include <fcli/progress.hpp>
+#include <fcli/terminal.hpp>
 
 #include "enum_array.hpp"
 
@@ -76,4 +78,18 @@ public:
   // Returns empty string on failure.
   [[nodiscard]] static auto calc_sha256(
       const std::filesystem::path&) -> std::string;
+
+  // If unable to retrieve terminal width,
+  // then fall_back_width will be returned.
+  [[nodiscard]] static auto get_term_width(
+      const fcli::Terminal& term, unsigned short max_width,
+      unsigned short fall_back_width) -> unsigned short;
+
+private:
+  enum class TermWidth {
+    NOT_CHECKED,
+    AVAILABLE,
+    NOT_AVAILABLE
+  };
+  static inline TermWidth s_term_width_status{TermWidth::NOT_CHECKED};
 };

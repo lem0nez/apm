@@ -13,6 +13,7 @@
 #include <cpr/cprtypes.h>
 #include <cpr/status_codes.h>
 #include <fcli/progress.hpp>
+#include <fcli/terminal.hpp>
 
 #include <doctest/doctest.h>
 #include "utils.hpp"
@@ -21,6 +22,7 @@
 #include "tmp_file.hpp"
 
 using namespace std;
+using namespace fcli;
 
 TEST_CASE("Confirmation requester") {
   istringstream alt_cin;
@@ -67,7 +69,7 @@ TEST_CASE("Confirmation requester") {
 TEST_CASE("Download a file") {
   using namespace cpr;
 
-  fcli::Progress progress({}, true, cout);
+  Progress progress({}, true, cout);
   TmpFile file;
   auto& ofs{file.get_stream()};
   const Url url("https://github.com/lem0nez/apm/raw/data/manifest.xml");
@@ -97,4 +99,14 @@ TEST_CASE("Calculate SHA256") {
   ofs.close();
   remove(path);
   CHECK(Utils::calc_sha256(path).empty());
+}
+
+TEST_CASE("Get terminal width") {
+  constexpr unsigned short
+      MAX_WIDTH{10U},
+      FALL_BACK_WIDTH{100U};
+
+  // Pass invalid file descriptor.
+  CHECK(Utils::get_term_width(
+      Terminal(-1), MAX_WIDTH, FALL_BACK_WIDTH) == FALL_BACK_WIDTH);
 }

@@ -9,13 +9,13 @@ Tools compiled with help of the
 project, without which they are wouldn't be available on so wide variety of
 architectures.
 
-### [aapt2](https://developer.android.com/studio/command-line/aapt2)
-Used to build resources and APK files. For this tool was applied a patch that
-changes a path of the dependent `tzdata` file, that is downloaded by APM from
-this branch.
+### aapt2
+Used to compile and package APK's resources. For this tool was applied a patch
+that changes a path of the dependent `tzdata` file, that is downloaded by APM
+from this branch.
 
-### [ziplaign](https://developer.android.com/studio/command-line/zipalign)
-Aligns resulting APK file to reduce memory usage by an application.
+### zipalign
+Aligns the resulting APK file to reduce memory usage by an application.
 
 ## tzdata
 [Timezone database](https://www.iana.org/time-zones) files that built to Android

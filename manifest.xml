@@ -6,18 +6,17 @@
     </assets>
     <tools>
         <set api="28">
-            <zip sha256="818298e0b65d0c761bbb47bd39e848d834cb4b1f6654d694f26304d40ad584f6">aarch64</zip>
-            <zip sha256="fa8c66aa625833fd9e9315c9d9dafaa10ea65e45156a65af2bf98b3d87a7168f">armel</zip>
-            <zip sha256="ccbe014a4e46f0c49091320f5a22e342f18643e7afdb7834f832c80b32d3981d">i386</zip>
-            <zip sha256="ae4ae2cde05cf471e2b1fbe12dd247769277be32a88f17811a360a0589d59f7d">mips64el</zip>
-            <zip sha256="d54feb8ba470ceecefb02dfd51d36031757cfa871fb8c9a0e68fc8c2d11d1bce">mipsel</zip>
-            <zip sha256="9ba1b13d7a53fdc272a59ea0a610e364537f606fb7e83a253cd07c1f8b4d89da">x86_64</zip>
+            <zip sha256="0ccbdd954d0c01b55d8315a2918777b8e0e4b2375ff3cfda009aad3f4e74e605">aarch64</zip>
+            <zip sha256="4abe9dca8dd2cd6736066abf309ac417b54a19d7cb101c126f79cdf69b9f4d0f">armel</zip>
+            <zip sha256="cd1cfa3d2dd6ad31ad9f588254788a868e641ed53bf71e542b1c66ffa44513f0">i386</zip>
+            <zip sha256="44dc360ec063cf4c10bc8f57dd77b773adadd3b6b700e3733cd6054aea9edb73">mips64el</zip>
+            <zip sha256="fcb623195bcb79c9fb83d0caff8468774582103dd15404957dfd4ea99296b30b">mipsel</zip>
+            <zip sha256="2a8b770004d74ee09f1cf0d142cb3af59fa7b05ca399f9669b99e23b2cce44fd">x86_64</zip>
         </set>
     </tools>
     <tzdata>
         <zip latest="true" sha256="ae981ae98903121ba7dd74e97b92ad56a926f07545b0bb0e3b8824c30addba8c">2021a</zip>
     </tzdata>
-
     <build-tools>
         <zip api="28" url="https://dl.google.com/android/repository/build-tools_r28.0.3-linux.zip"
              sha256="7954956a40633c88f693d638cbc23f68e9e2499dc7a4b7dfdaf6a3e91387749a">

@@ -1,4 +1,4 @@
-![Release build](https://img.shields.io/github/workflow/status/lem0nez/apm/CMake/main?label=release)
+![Release build](https://github.com/lem0nez/apm/actions/workflows/cmake.yml/badge.svg)
 
 # Android Project Manager
 At this moment in development.

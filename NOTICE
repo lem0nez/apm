@@ -1,2 +1,23 @@
 Copyright © 2021 Nikita Dudko. All rights reserved.
+Contacts: <nikita.dudko.95@gmail.com>
 Licensed under the Apache License, Version 2.0
+
+This product uses software developed at https://www.openssl.org/
+Copyright (c) 1998-2019 The OpenSSL Project.  All rights reserved.
+Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
+
+This product uses software developed at https://github.com/jarro2783/cxxopts
+Copyright (c) 2014, 2015, 2016, 2017 Jarryd Beck
+
+This software is based on pugixml library (https://pugixml.org).
+pugixml is Copyright (C) 2006-2020 Arseny Kapoulkine.
+
+This product uses software developed at https://github.com/ctabin/libzippp
+Copyright (C) 2013 Cédric Tabin
+The author can be contacted on http://www.astorm.ch/blog/index.php?contact
+
+This product uses software developed at https://whoshuu.github.io/cpr/
+Copyright (c) 2017 Huu Nguyen
+
+This product uses software developed at https://github.com/onqtam/doctest
+Copyright (c) 2016-2021 Viktor Kirilov

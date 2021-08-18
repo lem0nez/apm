@@ -19,6 +19,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Dependencies #
 # ------------ #
 
+# Set flags for both preprocessor and linker.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+find_package(OpenSSL 1.1.1 COMPONENTS Crypto REQUIRED)
 find_package(cxxopts 2.2 REQUIRED)
 find_package(pugixml 1.11 REQUIRED)
 find_package(libzippp 3.0 REQUIRED)
@@ -31,7 +36,7 @@ find_library(CPR_LIB cpr REQUIRED)
 find_package(PkgConfig REQUIRED)
 # Using IMPORTED_TARGET to create a target
 # that will be passed to target_link_libraries.
-pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.2)
+pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.3)
 
 set(INCLUDE_DIRS
   ${CPR_INCLUDE}
@@ -40,6 +45,8 @@ set(INCLUDE_DIRS
 
 set(LIBS
   stdc++fs
+  Threads::Threads
+  OpenSSL::Crypto
   cxxopts::cxxopts
   pugixml::pugixml
   libzippp::libzippp
@@ -52,7 +59,10 @@ set(LIBS
 # -------------- #
 
 set(SOURCES
-  /dev/null
+  src/apm.cpp
+  src/config.cpp
+  src/sdk.cpp
+  src/utils.cpp
 )
 
 # Compile the implementation for both apm and test executables.
@@ -61,6 +71,12 @@ target_include_directories(impl PUBLIC ${INCLUDE_DIRS})
 # Using INTERFACE as libraries must be linked with
 # final executables, not with the object library.
 target_link_libraries(impl INTERFACE ${LIBS})
+target_compile_definitions(impl PUBLIC APM_VERSION="${PROJECT_VERSION}")
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # Preserve all debug symbols to improve debugging with GDB.
+  target_compile_options(impl PUBLIC -fno-limit-debug-info)
+endif()
 
 # -------------- #
 # apm executable #
@@ -78,11 +94,22 @@ install(TARGETS apm RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 # --------------- #
 
 set(TEST_SOURCES
+  test/internal/args.cpp
+  test/internal/env.cpp
+  test/internal/tmp_dir.cpp
   test/main.cpp
+
+  test/apm.cpp
+  test/config.cpp
+  test/sdk.cpp
+  test/tmp_file.cpp
+  test/utils.cpp
 )
 
 if(BUILD_TESTING)
   find_package(doctest 2.4 REQUIRED)
   add_executable(test ${TEST_SOURCES})
+
+  target_include_directories(test PRIVATE test/)
   target_link_libraries(test PRIVATE impl doctest::doctest)
 endif()

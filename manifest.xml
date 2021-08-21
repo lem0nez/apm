@@ -2,7 +2,7 @@
 <manifest>
     <assets>
         <file sha256="63560b8eb3bdabe3424b5c896c20d07281b2e18eb50147a70e5629f57ff2733e">debug.jks</file>
-        <file sha256="b2458a73d15b8ee2d277f3620deb8bcbcac6d72021ee787cca3dc3578bcac3f8">project-template.zip</file>
+        <file sha256="5c86e9237052ccae0477ea6c2f500a44cd2a2b58c9bee269005e4fe4d5d41f65">project-template.zip</file>
     </assets>
     <tools>
         <set api="28">

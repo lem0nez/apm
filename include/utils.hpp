@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -60,9 +59,11 @@ public:
   }
 
   // Returns true if the user answered positively, or false otherwise.
-  [[nodiscard]] static auto request_confirm(
-      std::optional<bool> default_answer = {},
-      std::istream& istream = std::cin) -> bool;
+  [[nodiscard]] static auto
+      request_confirm(std::optional<bool> default_answer = {}) -> bool;
+  // If the standard stream has errors, then an error message
+  // will be printed, stream cleared and false returned.
+  static auto check_cin() -> bool;
 
   /*
    * Downloads a file with progress reporting. append_size determines

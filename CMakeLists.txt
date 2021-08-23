@@ -61,6 +61,7 @@ set(LIBS
 set(SOURCES
   src/apm.cpp
   src/config.cpp
+  src/project.cpp
   src/sdk.cpp
   src/utils.cpp
 )
@@ -101,6 +102,7 @@ set(TEST_SOURCES
 
   test/apm.cpp
   test/config.cpp
+  test/project.cpp
   test/sdk.cpp
   test/tmp_file.cpp
   test/utils.cpp

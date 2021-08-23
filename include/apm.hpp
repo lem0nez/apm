@@ -6,10 +6,8 @@
 
 #pragma once
 
-#include <iostream>
 #include <memory>
 #include <system_error>
-
 #include <cxxopts.hpp>
 #include <fcli/terminal.hpp>
 
@@ -27,7 +25,7 @@ public:
 
   // Returns false if wrong number is passed.
   static auto set_colors(unsigned short num) -> bool;
-  void request_theme(std::istream& = std::cin);
+  void request_theme();
   void print_versions() const;
 
 private:

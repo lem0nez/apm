@@ -10,3 +10,5 @@ compile_flags.txt
 .vimrc
 # Saved workflow session.
 .session.vim
+
+setup-env.sh

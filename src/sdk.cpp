@@ -7,7 +7,7 @@
 #include <array>
 #include <cstdlib>
 #include <functional>
-#include <limits>
+#include <iostream>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -51,12 +51,12 @@ Sdk::Sdk() {
 // -------------------- +
 
 auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
-    const unsigned short t_installed_api, istream& t_istream) -> int {
+                  const unsigned short t_installed_api) -> int {
   if (t_installed_api != 0U) {
     cout << Text::format_copy("You have already installed SDK with API <b>" +
             to_string(t_installed_api) + "<r>.\nDo you want to override it?") <<
             endl;
-    if (!Utils::request_confirm(false, t_istream)) {
+    if (!Utils::request_confirm(false)) {
       return EXIT_SUCCESS;
     }
   }
@@ -73,7 +73,7 @@ auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
     return EXIT_FAILURE;
   }
 
-  const auto api{request_api(manifest, t_istream)};
+  const auto api{request_api(manifest)};
   if (api == 0U) {
     return EXIT_FAILURE;
   }
@@ -115,7 +115,7 @@ auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
 
     if (confirm_update) {
       cout << "Do you want to update API independent files?" << endl;
-      if (!Utils::request_confirm(true, t_istream)) {
+      if (!Utils::request_confirm(true)) {
         install_api_independent_files = false;
       }
       if (install_api_independent_files) {
@@ -172,8 +172,7 @@ auto Sdk::download_manifest(
   return doc;
 }
 
-auto Sdk::request_api(const xml_document& t_manifest,
-    istream& t_istream) -> unsigned short {
+auto Sdk::request_api(const xml_document& t_manifest) -> unsigned short {
   const auto api_attrs{t_manifest.select_nodes("/manifest/tools/set/@api")};
   set<unsigned short> apis;
 
@@ -201,14 +200,13 @@ auto Sdk::request_api(const xml_document& t_manifest,
   unsigned short api{};
   while (true) {
     cout << "version> <b>"_fmt << flush;
-    t_istream >> api;
+    cin >> api;
     cout << "<r>"_fmt << flush;
 
-    if (!t_istream) {
-      cerr << "Invalid input! Try again"_err << endl;
-      t_istream.clear();
-      t_istream.ignore(numeric_limits<streamsize>::max(), '\n');
-    } else if (apis.count(api) == 0U) {
+    if (!Utils::check_cin()) {
+      continue;
+    }
+    if (apis.count(api) == 0U) {
       cerr << "Wrong version! Try again"_err << endl;
     } else {
       break;
@@ -223,14 +221,9 @@ void Sdk::create_dirs() const {
     m_root_dir_path / TOOLS_SUBDIR_NAME,
     m_root_dir_path / JARS_SUBDIR_NAME
   };
-  error_code fs_err;
 
   for (const auto& p : paths) {
-    create_directories(p, fs_err);
-    if (fs_err) {
-      throw filesystem_error(
-          "failed to create directory \"" + p.string() + '"', fs_err);
-    }
+    create_directories(p);
   }
 }
 

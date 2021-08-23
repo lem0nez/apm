@@ -40,8 +40,8 @@ auto main(int argc, char* argv[]) -> int {
     }
     Env::set_sdk_home(sdk_home);
   } else {
-    // TODO: exclude test cases.
-    // context.addFilter("test-case-exclude", "");
+    // Persistent TODO: exclude SDK dependent test cases.
+    context.addFilter("test-case-exclude", "Create projects");
   }
 
   const auto status{context.run()};

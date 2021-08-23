@@ -6,17 +6,22 @@
 
 #include <array>
 #include <exception>
-#include <limits>
+#include <filesystem>
+#include <iostream>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include <fcli/text.hpp>
 #include <fcli/theme.hpp>
 
 #include "apm.hpp"
+#include "project.hpp"
+#include "utils.hpp"
 
 using namespace std;
+using namespace filesystem;
 using namespace string_literals;
 
 using namespace cxxopts;
@@ -24,13 +29,24 @@ using namespace fcli;
 using namespace fcli::literals;
 
 Apm::Apm(error_condition& t_err): m_opts("apm", "Android Project Manager") {
+  // Project related options.
   m_opts.add_options()
+      // This is an optional positional option.
+      ("dir", "Set a project directory", value<path>())
+      ("c,create", "Create a new project");
+
+  // Options that don't require a project directory.
+  m_opts.add_options("Other")
       ("s,set-up", "Download and install SDK")
       ("colors", "Change number of colors in a palette (0, 8 or 256)",
           value<unsigned short>(), "NUM")
       ("choose-theme", "Choose default theme")
       ("h,help", "Print the help message")
       ("version", "Print the versions information");
+
+  m_opts.custom_help("OPTION...");
+  m_opts.positional_help("[DIR]");
+  m_opts.parse_positional("dir");
 
   const optional term_colors{m_term.find_out_supported_colors()};
   if (term_colors) {
@@ -57,6 +73,9 @@ Apm::Apm(error_condition& t_err): m_opts("apm", "Android Project Manager") {
 }
 
 auto Apm::run(int& t_argc, char** t_argv) -> int {
+  constexpr string_view SDK_NOT_INSTALLED_MSG(
+      "SDK not installed. Use <b>-s<r> (<b>--set-up<r>) option to install it");
+
   // Using a pointer, since ParseResult doesn't have default constructor.
   unique_ptr<const ParseResult> parse_result;
   try {
@@ -79,6 +98,49 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
   }
 
   const optional installed_sdk{m_config->get<unsigned short>(Config::Key::SDK)};
+
+  // --------------- +
+  // Project related |
+  // --------------- +
+
+  path project_dir;
+  if (parse_result->count("dir") != 0U) {
+    project_dir = (*parse_result)["dir"].as<path>();
+  }
+
+  // Iterate through options that depend on SDK.
+  for (const auto& o : {"create"}) {
+    if (parse_result->count(o) == 0U) {
+      continue;
+    }
+
+    if (!installed_sdk) {
+      cerr << Text::format_message(Text::Message::ERROR,
+              SDK_NOT_INSTALLED_MSG) << endl;
+      return EXIT_FAILURE;
+    }
+    if (project_dir.empty()) {
+      cerr << "A project directory not specified"_err << endl;
+      return EXIT_FAILURE;
+    }
+    break;
+  }
+
+  if (parse_result->count("create") != 0U) {
+    try {
+      return Project::create(project_dir, *installed_sdk,
+             m_sdk->get_file_path(Sdk::File::PROJECT_TEMPLATE), m_term);
+    } catch (const exception& e) {
+      cerr << Text::format_message(Text::Message::ERROR,
+              "Couldn't create a new project: "s + e.what()) << endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  // ------------- +
+  // Other options |
+  // ------------- +
+
   if (parse_result->count("set-up") != 0U) {
     try {
       return m_sdk->install(m_config, m_term,
@@ -88,7 +150,6 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
               "Couldn't set up SDK: "s + e.what()) << endl;
       return EXIT_FAILURE;
     }
-    return EXIT_SUCCESS;
   }
 
   if (parse_result->count("choose-theme") != 0U) {
@@ -103,8 +164,8 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
 
   cout << m_opts.help() << flush;
   if (parse_result->count("help") == 0U && !installed_sdk) {
-    cout << "SDK not installed. "
-            "Use <b>-s<r> (<b>--set-up<r>) option to install it"_warn << endl;
+    cout << Text::format_message(Text::Message::WARNING,
+            SDK_NOT_INSTALLED_MSG) << endl;
   }
   return EXIT_SUCCESS;
 }
@@ -133,7 +194,7 @@ auto Apm::set_colors(const unsigned short t_num) -> bool {
   return true;
 }
 
-void Apm::request_theme(istream& t_istream) {
+void Apm::request_theme() {
   using theme_t = pair<Theme::Name, string>;
   // Using array of pairs to keep items order.
   const array<theme_t, 4U> themes{{
@@ -176,14 +237,13 @@ void Apm::request_theme(istream& t_istream) {
   size_t num{};
   while (true) {
     cout << "number> <b>"_fmt << flush;
-    t_istream >> num;
+    cin >> num;
     cout << "<r>"_fmt << flush;
 
-    if (!t_istream) {
-      cerr << "Invalid input! Try again"_err << endl;
-      t_istream.clear();
-      t_istream.ignore(numeric_limits<streamsize>::max(), '\n');
-    } else if (num > themes.size()) {
+    if (!Utils::check_cin()) {
+      continue;
+    }
+    if (num > themes.size()) {
       cerr << "Wrong choice! Try again"_err << endl;
     } else {
       break;

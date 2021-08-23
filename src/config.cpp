@@ -6,8 +6,6 @@
 
 #include <cstdlib>
 #include <stdexcept>
-#include <system_error>
-
 #include <fcli/terminal.hpp>
 
 #include "config.hpp"
@@ -32,23 +30,12 @@ Config::Config() {
     dir = path(env_dir) / ".config";
   }
 
-  error_code err;
   // If directories already exist, the function does nothing.
-  create_directories(dir, err);
-  if (err) {
-    throw filesystem_error(
-        "failed to create directory \"" + dir.string() + '"', err);
-  }
-
+  create_directories(dir);
   m_file_path = dir / FILE_NAME;
-  const auto file_exists{exists(m_file_path, err)};
-  if (err) {
-    throw filesystem_error(
-        "failed to check if file \"" + m_file_path.string() + "\" exists", err);
-  }
 
   const string root_node_name(ROOT_NODE_NAME);
-  if (!file_exists) {
+  if (!exists(m_file_path)) {
     m_doc.append_child(root_node_name.c_str());
     if (!save()) {
       throw runtime_error(

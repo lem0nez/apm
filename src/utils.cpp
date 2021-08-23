@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cmath>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
@@ -24,12 +25,11 @@
 
 using namespace std;
 using namespace cpr;
+
 using namespace fcli;
+using namespace fcli::literals;
 
-auto Utils::request_confirm(
-    optional<bool> t_default_answer, istream& t_istream) -> bool {
-  using namespace fcli::literals;
-
+auto Utils::request_confirm(optional<bool> t_default_answer) -> bool {
   // Maximum characters to be converted to lowercase.
   constexpr size_t MAX_CONVERT_CHARS{3U};
   string answer;
@@ -58,16 +58,13 @@ auto Utils::request_confirm(
     cout << formatted_request_msg << flush;
     if (t_default_answer) {
       // Allow empty input using getline.
-      getline(t_istream, answer);
+      getline(cin, answer);
     } else {
-      t_istream >> answer;
+      cin >> answer;
     }
     cout << "<r>"_fmt << flush;
 
-    if (!t_istream) {
-      cerr << "Invalid input! Try again"_err << endl;
-      t_istream.clear();
-      t_istream.ignore(numeric_limits<streamsize>::max(), '\n');
+    if (!check_cin()) {
       continue;
     }
     if (t_default_answer && answer.empty()) {
@@ -89,6 +86,17 @@ auto Utils::request_confirm(
     cerr << Text::format_message(Text::Message::ERROR,
             R"(Wrong answer! Enter "yes" or "no")") << endl;
   }
+}
+
+auto Utils::check_cin() -> bool {
+  if (cin) {
+    return true;
+  }
+
+  cerr << "Invalid input! Try again"_err << endl;
+  cin.clear();
+  cin.ignore(numeric_limits<streamsize>::max(), '\n');
+  return false;
 }
 
 auto Utils::download(ofstream& t_ofs, const Url& t_url,

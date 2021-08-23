@@ -8,7 +8,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -62,10 +61,9 @@ public:
   // Assigns (doesn't create) the root directory path.
   Sdk();
   // Starts interactive installation process. If SDK already installed,
-  // then API version should be passed. Returns exit status.
-  auto install(std::shared_ptr<Config> config,
-      const fcli::Terminal& term, unsigned short installed_api = {},
-      std::istream& istream = std::cin) -> int;
+  // then API version should be passed. Returns program execution status.
+  auto install(std::shared_ptr<Config> config, const fcli::Terminal& term,
+               unsigned short installed_api = {}) -> int;
 
   // These functions don't guarantee that a file exists.
   [[nodiscard]] auto get_tool_path(Tool) const -> std::filesystem::path;
@@ -85,8 +83,8 @@ private:
   [[nodiscard]] static auto download_manifest(
       unsigned short progress_width) -> pugi::xml_document;
   // Returns zero on failure.
-  [[nodiscard]] static auto request_api(const pugi::xml_document& manifest,
-      std::istream& istream = std::cin) -> unsigned short;
+  [[nodiscard]] static auto
+      request_api(const pugi::xml_document& manifest) -> unsigned short;
   // Throws an exception of failure.
   void create_dirs() const;
 

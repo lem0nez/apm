@@ -125,12 +125,11 @@ jobs:
 
       - name: Install SDK
         env:
-          HOME: sdk
           API: ${{ matrix.sdk-api }}
-        run: ./build/apm --set-up <<< $API
+        run: env --ignore-environment HOME=sdk build/apm --set-up <<< $API
 
       - name: Test
-        run: ./build/test --duration --sdk-home=sdk/
+        run: build/test --duration --sdk-home=sdk/
 
       - name: Install
         run: sudo cmake --install build/

@@ -165,7 +165,7 @@ auto Utils::download(ofstream& t_ofs, const Url& t_url,
 }
 
 auto Utils::calc_sha256(const filesystem::path& t_path) -> string {
-  constexpr size_t BUFFER_SIZE{4096U};
+  constexpr size_t BUFFER_SIZE{1U << 13U};
 
   ifstream ifs(t_path, ios::binary);
   if (!ifs) {
@@ -177,10 +177,9 @@ auto Utils::calc_sha256(const filesystem::path& t_path) -> string {
     return {};
   }
 
-  string buf;
-  buf.resize(BUFFER_SIZE);
+  array<char, BUFFER_SIZE> buf{};
   do {
-    ifs.read(buf.data(), BUFFER_SIZE);
+    ifs.read(buf.data(), buf.size());
     if (SHA256_Update(&context, buf.data(),
         static_cast<unsigned long>(ifs.gcount())) != 1) {
       return {};

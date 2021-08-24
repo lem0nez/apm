@@ -69,6 +69,19 @@ jobs:
           cmake . -DLIBZIPPP_BUILD_TESTS=OFF
           sudo make install
 
+      - name: Checkout JNI wrapper
+        uses: actions/checkout@v2
+        with:
+          repository: mapbox/jni.hpp
+          ref: v4.0.1
+          path: jni-hpp
+
+      - name: Install JNI wrapper
+        working-directory: jni-hpp
+        run: |
+          sudo install --mode=644 -D \
+              --target-directory=/usr/local/include/jni/ include/jni/*
+
       - name: Install cURL library
         run: sudo apt install libcurl4-openssl-dev
 

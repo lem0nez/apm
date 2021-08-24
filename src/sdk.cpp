@@ -187,6 +187,7 @@ auto Sdk::request_api(const xml_document& t_manifest) -> unsigned short {
     cerr << "No available API versions found"_err << endl;
     return {};
   }
+  // TODO: remove it.
   if (apis.size() == 1U) {
     return *apis.cbegin();
   }

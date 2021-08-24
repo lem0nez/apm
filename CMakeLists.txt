@@ -28,9 +28,14 @@ find_package(cxxopts 2.2 REQUIRED)
 find_package(pugixml 1.11 REQUIRED)
 find_package(libzippp 3.0 REQUIRED)
 
+# At least version 1.8 is required.
+find_package(JNI REQUIRED)
+# Version of the JNI wrapper by Mapbox must be at least 4.0.1.
+find_path(JNI_HPP_INCLUDE jni/jni.hpp REQUIRED)
+
 # Minimum version of cpr must be 1.6.2 and
 # it must be compiled with the SSL back-end.
-find_path(CPR_INCLUDE NAMES cpr/cpr.h cpr.h REQUIRED)
+find_path(CPR_INCLUDE cpr/cpr.h REQUIRED)
 find_library(CPR_LIB cpr REQUIRED)
 
 find_package(PkgConfig REQUIRED)
@@ -39,6 +44,8 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.3)
 
 set(INCLUDE_DIRS
+  ${JNI_INCLUDE_DIRS}
+  ${JNI_HPP_INCLUDE}
   ${CPR_INCLUDE}
   include/
 )
@@ -50,6 +57,7 @@ set(LIBS
   cxxopts::cxxopts
   pugixml::pugixml
   libzippp::libzippp
+  ${JNI_LIBRARIES}
   ${CPR_LIB}
   PkgConfig::FCLI
 )

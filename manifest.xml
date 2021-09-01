@@ -1,22 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest>
+    <apm-jni>
+        <jar sha256="194a3763807b0c5d78aa58fc26dc5012749e5651d374d3a64f3fc0137fd7db7a">0.1.0</jar>
+    </apm-jni>
     <assets>
         <file sha256="63560b8eb3bdabe3424b5c896c20d07281b2e18eb50147a70e5629f57ff2733e">debug.jks</file>
         <file sha256="5c86e9237052ccae0477ea6c2f500a44cd2a2b58c9bee269005e4fe4d5d41f65">project-template.zip</file>
     </assets>
-    <tools>
-        <set api="28">
-            <zip sha256="0ccbdd954d0c01b55d8315a2918777b8e0e4b2375ff3cfda009aad3f4e74e605">aarch64</zip>
-            <zip sha256="4abe9dca8dd2cd6736066abf309ac417b54a19d7cb101c126f79cdf69b9f4d0f">armel</zip>
-            <zip sha256="cd1cfa3d2dd6ad31ad9f588254788a868e641ed53bf71e542b1c66ffa44513f0">i386</zip>
-            <zip sha256="44dc360ec063cf4c10bc8f57dd77b773adadd3b6b700e3733cd6054aea9edb73">mips64el</zip>
-            <zip sha256="fcb623195bcb79c9fb83d0caff8468774582103dd15404957dfd4ea99296b30b">mipsel</zip>
-            <zip sha256="2a8b770004d74ee09f1cf0d142cb3af59fa7b05ca399f9669b99e23b2cce44fd">x86_64</zip>
-        </set>
-    </tools>
-    <tzdata>
-        <zip latest="true" sha256="ae981ae98903121ba7dd74e97b92ad56a926f07545b0bb0e3b8824c30addba8c">2021a</zip>
-    </tzdata>
     <build-tools>
         <zip api="28" url="https://dl.google.com/android/repository/build-tools_r28.0.3-linux.zip"
              sha256="7954956a40633c88f693d638cbc23f68e9e2499dc7a4b7dfdaf6a3e91387749a">
@@ -30,4 +20,17 @@
             <framework>android-9/android.jar</framework>
         </zip>
     </platforms>
+    <tools>
+        <set api="28">
+            <zip sha256="0ccbdd954d0c01b55d8315a2918777b8e0e4b2375ff3cfda009aad3f4e74e605">aarch64</zip>
+            <zip sha256="4abe9dca8dd2cd6736066abf309ac417b54a19d7cb101c126f79cdf69b9f4d0f">armel</zip>
+            <zip sha256="cd1cfa3d2dd6ad31ad9f588254788a868e641ed53bf71e542b1c66ffa44513f0">i386</zip>
+            <zip sha256="44dc360ec063cf4c10bc8f57dd77b773adadd3b6b700e3733cd6054aea9edb73">mips64el</zip>
+            <zip sha256="fcb623195bcb79c9fb83d0caff8468774582103dd15404957dfd4ea99296b30b">mipsel</zip>
+            <zip sha256="2a8b770004d74ee09f1cf0d142cb3af59fa7b05ca399f9669b99e23b2cce44fd">x86_64</zip>
+        </set>
+    </tools>
+    <tzdata>
+        <zip latest="true" sha256="ae981ae98903121ba7dd74e97b92ad56a926f07545b0bb0e3b8824c30addba8c">2021a</zip>
+    </tzdata>
 </manifest>

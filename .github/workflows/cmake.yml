@@ -9,6 +9,7 @@ jobs:
     strategy:
       matrix:
         compiler: [g++, clang++]
+        jdk-version: [8, 11, 13, 16]
         sdk-api: [28]
 
     steps:
@@ -68,6 +69,11 @@ jobs:
         run: |
           cmake . -DLIBZIPPP_BUILD_TESTS=OFF
           sudo make install
+
+      - name: Install OpenJDK
+        env:
+          VERSION: ${{ matrix.jdk-version }}
+        run: sudo apt install openjdk-$VERSION-jdk
 
       - name: Checkout JNI wrapper
         uses: actions/checkout@v2
@@ -131,7 +137,10 @@ jobs:
         working-directory: build
         env:
           CXX: ${{ matrix.compiler }}
-        run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          JDK_VERSION: ${{ matrix.jdk-version }}
+        run: |
+          JAVA_HOME=/usr/lib/jvm/*-$JDK_VERSION-openjdk-* \
+              cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
       - name: Build
         run: cmake --build build/

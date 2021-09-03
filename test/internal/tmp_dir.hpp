@@ -28,5 +28,5 @@ public:
 private:
   // ‘X’ characters will be replaced by the mkdtemp function.
   static constexpr std::string_view NAME_TEMPLATE{"apm-test_XXXXXX"};
-  std::shared_ptr<std::filesystem::directory_entry> m_dir;
+  std::shared_ptr<const std::filesystem::directory_entry> m_dir;
 };

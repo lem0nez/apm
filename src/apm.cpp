@@ -63,7 +63,7 @@ Apm::Apm(error_condition& t_err): m_opts("apm", "Android Project Manager") {
   }
 
   try {
-    m_sdk = make_unique<Sdk>();
+    m_sdk = make_shared<Sdk>();
   } catch (const exception& e) {
     cerr << Text::format_message(Text::Message::ERROR,
             "Couldn't prepare SDK: "s + e.what()) << endl;

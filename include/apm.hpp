@@ -34,5 +34,5 @@ private:
   // Using pointers, since exceptions, that
   // default constructors throw, must be caught.
   std::shared_ptr<Config> m_config;
-  std::unique_ptr<Sdk> m_sdk;
+  std::shared_ptr<Sdk> m_sdk;
 };

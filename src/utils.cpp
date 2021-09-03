@@ -10,8 +10,6 @@
 #include <chrono>
 #include <cmath>
 #include <iomanip>
-#include <iostream>
-#include <limits>
 #include <sstream>
 #include <stdexcept>
 
@@ -61,6 +59,7 @@ auto Utils::request_confirm(optional<bool> t_default_answer) -> bool {
       getline(cin, answer);
     } else {
       cin >> answer;
+      ignore_cin_line();
     }
     cout << "<r>"_fmt << flush;
 
@@ -95,7 +94,7 @@ auto Utils::check_cin() -> bool {
 
   cerr << "Invalid input! Try again"_err << endl;
   cin.clear();
-  cin.ignore(numeric_limits<streamsize>::max(), '\n');
+  ignore_cin_line();
   return false;
 }
 

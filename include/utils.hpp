@@ -9,6 +9,8 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -64,6 +66,14 @@ public:
   // If the standard stream has errors, then an error message
   // will be printed, stream cleared and false returned.
   static auto check_cin() -> bool;
+  /*
+   * This function must be called before switching to std::getline after
+   * whitespace-delimited input (e. g., via operator >>). If you don't,
+   * std::getline just will return immediately.
+   */
+  static inline auto ignore_cin_line() -> std::istream& {
+    return std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  }
 
   /*
    * Downloads a file with progress reporting. append_size determines

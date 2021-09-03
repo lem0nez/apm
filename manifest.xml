@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest>
     <apm-jni>
-        <jar sha256="194a3763807b0c5d78aa58fc26dc5012749e5651d374d3a64f3fc0137fd7db7a">0.1.0</jar>
+        <jar sha256="3aa3c143fab2dee5199c5b91368c540f98ec0d74d9331b5800897f4b3b8926da">0.1.0</jar>
     </apm-jni>
     <assets>
         <file sha256="63560b8eb3bdabe3424b5c896c20d07281b2e18eb50147a70e5629f57ff2733e">debug.jks</file>

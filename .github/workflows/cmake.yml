@@ -92,7 +92,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: jwakely/pstreams
-          ref: 012f33d # v1.0.3
+          ref: 012f33d55222552bf84087a4e1e3ced6ecae203d # v1.0.3
           path: pstreams
 
       - name: Install PStreams

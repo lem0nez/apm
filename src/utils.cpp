@@ -12,18 +12,24 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 
 #include <cpr/api.h>
 #include <cpr/callback.h>
+
 #include <fcli/terminal.hpp>
 #include <fcli/text.hpp>
-#include <openssl/sha.h>
 
+#include <openssl/sha.h>
+#include <pstreams/pstream.h>
+
+#include "general/scope_guard.hpp"
 #include "utils.hpp"
 
 using namespace std;
-using namespace cpr;
+using namespace filesystem;
 
+using namespace cpr;
 using namespace fcli;
 using namespace fcli::literals;
 
@@ -163,7 +169,7 @@ auto Utils::download(ofstream& t_ofs, const Url& t_url,
   return response;
 }
 
-auto Utils::calc_sha256(const filesystem::path& t_path) -> string {
+auto Utils::calc_sha256(const path& t_path) -> string {
   constexpr size_t BUFFER_SIZE{1U << 13U};
 
   ifstream ifs(t_path, ios::binary);
@@ -196,6 +202,94 @@ auto Utils::calc_sha256(const filesystem::path& t_path) -> string {
     result_oss << setw(2) << static_cast<unsigned short>(c);
   }
   return result_oss.str();
+}
+
+auto Utils::exec(const vector<string>& t_cmd,
+                 const function<output_callback_t>& t_out_callback,
+                 const function<output_callback_t>& t_err_callback,
+                 const directory_entry& t_work_dir) -> int {
+  using namespace redi;
+  constexpr size_t OUTPUT_BUFFER_SIZE{512U};
+
+  ScopeGuard work_path_guard;
+  if (!t_work_dir.path().empty()) {
+    auto prev_work_path{current_path()};
+    current_path(t_work_dir);
+    work_path_guard = [path = move(prev_work_path)] { current_path(path); };
+  }
+
+  ipstream ips(t_cmd, pstreams::pstdout | pstreams::pstderr);
+  if (!ips.is_open()) {
+    throw runtime_error("failed to start a process");
+  }
+
+  if (t_out_callback || t_err_callback) {
+    // These variables determine whether EOF of a stream has been reached.
+    // Initializer excludes a stream which output isn't required.
+    auto
+        out_finished{!t_out_callback},
+        err_finished{!t_err_callback};
+    string out, err;
+
+    array<char, OUTPUT_BUFFER_SIZE> buf{};
+    streamsize extracted_chars_count{};
+    bool process_extracted_chars{};
+
+    const auto process_stream{[&] (ipstream& stream, bool& finished,
+        string& output, const function<output_callback_t>& callback) {
+      if (finished) {
+        return;
+      }
+
+      // Read output in a non-blocking way.
+      while ((extracted_chars_count =
+              stream.readsome(buf.data(), buf.size())) > 0) {
+        output += string(buf.cbegin(), buf.cbegin() + extracted_chars_count);
+        process_extracted_chars = true;
+      }
+
+      if (process_extracted_chars) {
+        process_extracted_chars = false;
+        size_t new_line_pos{};
+        while ((new_line_pos = output.find('\n')) != string::npos) {
+          callback(output.substr(0U, new_line_pos));
+          output.erase(0U, new_line_pos + 1U);
+        }
+      }
+
+      if (ips.eof()) {
+        // Clear eofbit.
+        ips.clear();
+        finished = true;
+        if (!output.empty()) {
+          callback(output);
+        }
+      }
+    }};
+
+    do {
+      // By calling the out and err functions
+      // we switch between the stream buffers.
+      process_stream(ips.out(), out_finished, out, t_out_callback);
+      process_stream(ips.err(), err_finished, err, t_err_callback);
+    } while (!(out_finished && err_finished));
+  }
+
+  // Wait in a blocking way until eofbit of the streams will be set,
+  // since calling only the close function may lead to an error.
+  if (!t_out_callback) {
+    ips.out().ignore(numeric_limits<streamsize>::max());
+  }
+  if (!t_err_callback) {
+    ips.err().ignore(numeric_limits<streamsize>::max());
+  }
+
+  ips.close();
+  const auto buf{ips.rdbuf()};
+  if (!buf->exited()) {
+    throw runtime_error("a process isn't exited");
+  }
+  return buf->status();
 }
 
 auto Utils::get_term_width(

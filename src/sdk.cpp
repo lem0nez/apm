@@ -19,7 +19,7 @@
 #include <cpr/status_codes.h>
 #include <fcli/text.hpp>
 
-#include "enum_array.hpp"
+#include "general/enum_array.hpp"
 #include "sdk.hpp"
 #include "utils.hpp"
 

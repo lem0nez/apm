@@ -4,22 +4,28 @@
  * Licensed under the Apache License, Version 2.0
  */
 
+#include <array>
 #include <filesystem>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
+#include <string>
 #include <string_view>
+#include <vector>
 
 #include <cpr/cprtypes.h>
 #include <cpr/status_codes.h>
 #include <fcli/progress.hpp>
 
 #include <doctest/doctest.h>
+#include "internal/alt_stream.hpp"
+#include "internal/tmp_dir.hpp"
+
+#include "tmp_file.hpp"
 #include "utils.hpp"
 
-#include "internal/alt_stream.hpp"
-#include "tmp_file.hpp"
-
 using namespace std;
+using namespace filesystem;
 using namespace fcli;
 
 TEST_CASE("Confirmation requester") {
@@ -93,7 +99,6 @@ TEST_CASE("Download a file") {
 }
 
 TEST_CASE("Calculate SHA256") {
-  using namespace filesystem;
   constexpr string_view
       EMPTY_HASH(
           "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
@@ -112,4 +117,51 @@ TEST_CASE("Calculate SHA256") {
   ofs.close();
   remove(path);
   CHECK(Utils::calc_sha256(path).empty());
+}
+
+TEST_CASE("Execute commands") {
+  CHECK(Utils::exec({"echo"}) == 0);
+
+  const TmpDir tmp_dir;
+  const auto
+      tmp_dir_path{tmp_dir.get_entry().path()},
+      tmp_subdir_path{tmp_dir_path / "subdir"};
+
+  create_directory(tmp_subdir_path);
+  const directory_entry tmp_subdir(tmp_subdir_path);
+  current_path(tmp_dir_path);
+
+  CHECK(Utils::exec({"pwd"}, [&tmp_subdir_path] (const string_view out) {
+    CHECK(tmp_subdir_path == out);
+  }, {}, tmp_subdir) == 0);
+
+  bool err_obtained{};
+  CHECK(Utils::exec({"ls", "--unknown-option"}, {},
+      [&err_obtained] (const string_view err) {
+    if (!err.empty()) {
+      err_obtained = true;
+    }
+  }, tmp_subdir) != 0);
+  CHECK(err_obtained);
+
+  CHECK_THROWS_AS(Utils::exec({""}, {}, {}, tmp_subdir), runtime_error);
+  // Working directory must be restored in any way.
+  CHECK(current_path() == tmp_dir_path);
+
+  const vector<string> cmd{
+    "sh", "-c",
+    R"(printf '\n \n0\t'; printf >&2 'aZ\n)" "\u03b1\u03b2"  R"(\n\n')"
+  };
+  constexpr array
+      expected_out{"", " ", "0\t"},
+      expected_err{"aZ", "\u03b1\u03b2", ""};
+  size_t
+      out_line{},
+      err_line{};
+
+  CHECK(Utils::exec(cmd, [&] (const string_view out) {
+    CHECK(out == expected_out.at(out_line++));
+  }, [&] (const string_view err) {
+    CHECK(err == expected_err.at(err_line++));
+  }) == 0);
 }

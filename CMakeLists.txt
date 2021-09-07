@@ -33,6 +33,9 @@ find_package(JNI REQUIRED)
 # Version of the JNI wrapper by Mapbox must be at least 4.0.1.
 find_path(JNI_HPP_INCLUDE jni/jni.hpp REQUIRED)
 
+# At least version 1.0.3 of PStreams by Jonathan Wakely is required.
+find_path(PSTREAMS_INCLUDE pstreams/pstream.h REQUIRED)
+
 # Minimum version of cpr must be 1.6.2 and
 # it must be compiled with the SSL back-end.
 find_path(CPR_INCLUDE cpr/cpr.h REQUIRED)
@@ -46,6 +49,7 @@ pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.3)
 set(INCLUDE_DIRS
   ${JNI_INCLUDE_DIRS}
   ${JNI_HPP_INCLUDE}
+  ${PSTREAMS_INCLUDE}
   ${CPR_INCLUDE}
   include/
 )
@@ -108,6 +112,8 @@ set(TEST_SOURCES
   test/internal/env.cpp
   test/internal/tmp_dir.cpp
   test/main.cpp
+
+  test/general/scope_guard.cpp
 
   test/apm.cpp
   test/config.cpp

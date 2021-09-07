@@ -88,6 +88,19 @@ jobs:
           sudo install --mode=644 -D \
               --target-directory=/usr/local/include/jni/ include/jni/*
 
+      - name: Checkout PStreams
+        uses: actions/checkout@v2
+        with:
+          repository: jwakely/pstreams
+          ref: 012f33d # v1.0.3
+          path: pstreams
+
+      - name: Install PStreams
+        working-directory: pstreams
+        run: |
+            sudo install --mode=644 -D \
+                --target-directory=/usr/local/include/pstreams/ pstream.h
+
       - name: Install cURL library
         run: sudo apt install libcurl4-openssl-dev
 

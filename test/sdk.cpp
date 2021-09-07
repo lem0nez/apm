@@ -16,8 +16,8 @@
 #include "internal/env.hpp"
 #include "internal/tmp_dir.hpp"
 
+#include "general/enum_array.hpp"
 #include "apm.hpp"
-#include "enum_array.hpp"
 #include "sdk.hpp"
 
 using namespace std;

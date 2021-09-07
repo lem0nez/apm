@@ -8,11 +8,11 @@ package com.github.lem0nez.apm;
 
 @SuppressWarnings("serial")
 class ExitException extends SecurityException {
-    public ExitException(int status) {
+    ExitException(int status) {
         this.status = status;
     }
 
-    public int getStatus() {
+    int getStatus() {
         return status;
     }
     private final int status;

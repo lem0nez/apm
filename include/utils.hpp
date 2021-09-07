@@ -9,11 +9,13 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <cpr/cprtypes.h>
 #include <cpr/response.h>
@@ -21,9 +23,11 @@
 #include <fcli/progress.hpp>
 #include <fcli/terminal.hpp>
 
-#include "enum_array.hpp"
+#include "general/enum_array.hpp"
 
 class Utils {
+  using output_callback_t = void (std::string_view line);
+
 public:
   enum class Arch {
     X86_64,
@@ -89,6 +93,17 @@ public:
   // Returns empty string on failure.
   [[nodiscard]] static auto calc_sha256(
       const std::filesystem::path&) -> std::string;
+
+  /*
+   * Executes a command in a new process. If a callback is provided, it will be
+   * called every time when entire line retrieved or EOF of a stream reached. If
+   * work_dir is provided, function will change the current working directory
+   * before executing the command and then will restore it.
+   */
+  static auto exec(const std::vector<std::string>& cmd,
+      const std::function<output_callback_t>& out_callback = {},
+      const std::function<output_callback_t>& err_callback = {},
+      const std::filesystem::directory_entry& work_dir = {}) -> int;
 
   // If unable to retrieve terminal width,
   // then fall_back_width will be returned.

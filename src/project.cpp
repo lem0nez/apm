@@ -20,7 +20,7 @@
 #include <libzippp/libzippp.h>
 #include <pugixml.hpp>
 
-#include "enum_array.hpp"
+#include "general/enum_array.hpp"
 #include "project.hpp"
 #include "utils.hpp"
 

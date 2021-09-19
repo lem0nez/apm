@@ -23,12 +23,14 @@
 #include "tmp_file.hpp"
 
 /*
- * This class has two aims:
- * 1. download and install files, that required to build application;
+ * This class has two main aims:
+ * 1. download and install files, that required to build applications;
  * 2. provide paths to this files.
  */
 class Sdk {
 public:
+  static constexpr std::string_view DEBUG_KEYSTORE_PASSWD{"android"};
+
   enum class Tool {
     // Compiles and packages APK's resources.
     AAPT2,

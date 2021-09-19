@@ -16,28 +16,146 @@
 
 #include <fcli/progress.hpp>
 #include <fcli/text.hpp>
-
 #include <libzippp/libzippp.h>
-#include <pugixml.hpp>
 
 #include "general/enum_array.hpp"
+#include "config.hpp"
 #include "project.hpp"
 #include "utils.hpp"
 
 using namespace std;
 using namespace filesystem;
+using namespace string_literals;
 
 using namespace fcli;
 using namespace fcli::literals;
+using namespace pugi;
+
+using Message = Text::Message;
+
+Project::Project(const path& t_root_dir) {
+  if (!is_directory(t_root_dir)) {
+    throw runtime_error("directory doesn't exist");
+  }
+  m_dir = directory_entry(t_root_dir);
+
+  const auto config_path{t_root_dir / CONFIG_FILE_NAME};
+  if (!exists(config_path)) {
+    throw runtime_error("it's not an APM project");
+  }
+
+  xml_document config;
+  const auto parse_result{config.load_file(config_path.c_str())};
+  if (!parse_result) {
+    throw runtime_error(
+        "failed to load configuration ("s + parse_result.description() + ')');
+  }
+  // Default parse options guarantee existence of the document element.
+  m_config_root = config.document_element();
+}
+
+auto Project::build(const Apm& t_apm, const bool t_is_debug_build,
+    const path& t_output_apk_copy, shared_ptr<const Jvm> t_jvm) const -> int {
+
+  constexpr string_view PROGRESS_TEXT{"Preparing to build"};
+  constexpr unsigned short
+      MAX_PROGRESS_WIDTH{PROGRESS_TEXT.length() + 10U},
+      FALL_BACK_PROGRESS_WIDTH{15U};
+  Progress progress(PROGRESS_TEXT, false, Utils::get_term_width(
+      t_apm.get_term(), MAX_PROGRESS_WIDTH, FALL_BACK_PROGRESS_WIDTH));
+  progress.show();
+
+  if (!t_is_debug_build &&
+      !t_apm.get_config()->get<path>(Config::Key::JKS_PATH).has_value()) {
+    progress.hide();
+    cerr << "You need to set a Java KeyStore via <b>-j<r> (<b>--set-jks<r>) "
+            "option to sign the release APK files"_err << endl;
+    return EXIT_FAILURE;
+  }
+
+  if (!t_output_apk_copy.empty()) {
+    if (is_directory(t_output_apk_copy)) {
+      progress.hide();
+      cerr << "Path of the output APK file must not be a directory"_err << endl;
+      return EXIT_FAILURE;
+    }
+    if (const auto parent_dir{t_output_apk_copy.parent_path()};
+        !(parent_dir.empty() || is_directory(parent_dir))) {
+      progress.hide();
+      cerr << Text::format_message(Message::ERROR,
+              "Parent directory \"" + parent_dir.string() +
+              "\" of the output APK file doesn't exist") << endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  const auto min_sdk_node{m_config_root.child("min-sdk")};
+  if (!min_sdk_node) {
+    progress.hide();
+    cerr << "Project configuration doesn't define <u>min-sdk<r>"_err << endl;
+    return EXIT_FAILURE;
+  }
+
+  const auto min_sdk_text{min_sdk_node.text()};
+  // Existence of the SDK value already checked by Apm::run.
+  const auto installed_sdk_api
+      {*t_apm.get_config()->get<unsigned short>(Config::Key::SDK)};
+
+  if (min_sdk_text.as_uint() > installed_sdk_api) {
+    progress.hide();
+    cerr << Text::format_message(Message::ERROR, "At least SDK <b>"s +
+            min_sdk_text.get() + "<r> is required to build this project "
+            "(API version of the installed SDK is <b>" +
+            to_string(installed_sdk_api) + "<r>)") << endl;
+    return EXIT_FAILURE;
+  }
+
+  return EXIT_SUCCESS;
+}
+
+auto Project::get_app_dir(const AppDir t_dir) const -> path {
+  path root_dir("app");
+  const EnumArray<AppDir, path>
+      dirs{root_dir, root_dir / "assets", root_dir / "res", root_dir / "java"};
+  return m_dir / dirs.get(t_dir);
+}
+
+auto Project::get_build_dir(const BuildDir t_dir, const BuildConfig t_config,
+    const bool t_auto_create) const -> path {
+
+  constexpr string_view ROOT_DIR_NAME{"build"};
+  constexpr EnumArray<BuildConfig, string_view>
+      config_names{"debug", "release", "all"};
+  const EnumArray<BuildDir, path> dirs{
+    "flat", "apk", "r-java", "class", path("dex") / "intermediate", "dex"
+  };
+
+  const auto dir{m_dir / path(ROOT_DIR_NAME) /
+                 path(config_names.get(t_config)) / dirs.get(t_dir)};
+  if (t_auto_create) {
+    create_directories(dir);
+  }
+  return dir;
+}
+
+auto Project::get_apk_path(
+    const ApkType t_type, const BuildConfig t_build_config,
+    const bool t_auto_create_parent_dir) const -> path {
+
+  constexpr EnumArray<ApkType, string_view>
+      file_names{"base", "signed", "aligned", "final"};
+  return
+      get_build_dir(BuildDir::APKS, t_build_config, t_auto_create_parent_dir) /
+      (string(file_names.get(t_type)) + ".apk");
+}
 
 // ---------------- +
 // Project creation |
 // ---------------- +
 
+// TODO: ask for .gitignore.
 auto Project::create(const path& t_dir, const unsigned short t_sdk_api,
                      const path& t_templ_zip, const Terminal& t_term) -> int {
-  using namespace string_literals;
-
   constexpr unsigned short
       MAX_PROGRESS_WIDTH{30U},
       FALL_BACK_PROGRESS_WIDTH{10U};
@@ -45,7 +163,7 @@ auto Project::create(const path& t_dir, const unsigned short t_sdk_api,
 
   if (exists(t_dir)) {
     const string type(is_directory(t_dir, fs_err) ? "Directory" : "File");
-    cerr << Text::format_message(Text::Message::ERROR,
+    cerr << Text::format_message(Message::ERROR,
             type + " \"" + t_dir.string() + "\" already exists. "
             "You must specify a directory that doesn't exist") << endl;
     return EXIT_FAILURE;
@@ -163,7 +281,7 @@ auto Project::request_min_api(
       continue;
     }
     if (level < MIN_API) {
-      cerr << Text::format_message(Text::Message::ERROR, "API level must be "
+      cerr << Text::format_message(Message::ERROR, "API level must be "
               "at least <b>" + to_string(MIN_API) + "<r>") << endl;
     } else if (level > t_sdk_api) {
       cerr << "API level must <b>not<r> be greater "
@@ -305,8 +423,6 @@ void Project::expand_variables(const directory_entry& t_project_root,
 
 void Project::set_app_name(const path& t_strings_xml,
                            const string_view t_name) {
-  using namespace pugi;
-
   // Using pugixml instead of simple string replacing, since the name can
   // contain symbols that must be escaped / replaced to be used in a XML file.
   xml_document strings;

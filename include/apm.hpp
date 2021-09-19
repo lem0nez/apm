@@ -6,8 +6,10 @@
 
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <system_error>
+
 #include <cxxopts.hpp>
 #include <fcli/terminal.hpp>
 
@@ -25,8 +27,15 @@ public:
 
   // Returns false if wrong number is passed.
   static auto set_colors(unsigned short num) -> bool;
+  // Throws an exception on failure.
+  void set_release_jks(const std::filesystem::path&) const;
   void request_theme();
   void print_versions() const;
+
+  [[nodiscard]] inline auto get_term() const -> const auto& { return m_term; }
+  [[nodiscard]] inline auto get_config() const { return m_config; }
+  [[nodiscard]] inline auto get_sdk() const -> std::shared_ptr<const Sdk>
+      { return m_sdk; }
 
 private:
   cxxopts::Options m_opts;

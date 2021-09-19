@@ -4,8 +4,6 @@
  * Licensed under the Apache License, Version 2.0
  */
 
-#include <string>
-
 template<typename T, typename V>
 // V type already has the const specifier.
 auto Config::apply(const Key t_key, V t_val, const bool t_save_file) -> bool {

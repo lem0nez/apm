@@ -44,7 +44,7 @@ find_library(CPR_LIB cpr REQUIRED)
 find_package(PkgConfig REQUIRED)
 # Using IMPORTED_TARGET to create a target
 # that will be passed to target_link_libraries.
-pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.3)
+pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.4)
 
 set(INCLUDE_DIRS
   ${JNI_INCLUDE_DIRS}

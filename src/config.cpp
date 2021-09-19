@@ -74,3 +74,25 @@ Config::Config() {
     throw runtime_error("failed to apply a theme");
   }
 }
+
+auto Config::remove(const Key t_key, const bool t_save_file) -> bool {
+  const auto node{m_root_node.child(string(get_key_name(t_key)).c_str())};
+  if (!node) {
+    return true;
+  }
+
+  if (!m_root_node.remove_child(node)) {
+    return false;
+  }
+  if (t_save_file) {
+    return save();
+  }
+  return true;
+}
+
+auto Config::save() const -> bool {
+  if (m_file_path.empty()) {
+    return true;
+  }
+  return m_doc.save_file(m_file_path.c_str(), {}, pugi::format_raw);
+}

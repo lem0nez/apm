@@ -28,6 +28,7 @@ using namespace filesystem;
 
 using namespace fcli;
 using namespace fcli::literals;
+using Message = Text::Message;
 
 using namespace cpr;
 using namespace libzippp;
@@ -169,7 +170,7 @@ auto Sdk::download_manifest(
   const auto parse_result{doc.load_string(response.text.c_str())};
 
   if (parse_result.status != status_ok) {
-    cerr << Text::format_message(Text::Message::ERROR,
+    cerr << Text::format_message(Message::ERROR,
             "Couldn't parse the manifest file. "s +
             parse_result.description()) << endl;
     return {};
@@ -662,7 +663,7 @@ auto Sdk::check_response(const Response& t_response,
     if (t_fail_using_progress) {
       t_progress.finish(false, msg);
     } else {
-      cerr << Text::format_message(Text::Message::ERROR, msg) << endl;
+      cerr << Text::format_message(Message::ERROR, msg) << endl;
     }
   } else {
     auto msg{string(t_failure_msg) + " (status code <b>" +
@@ -672,7 +673,7 @@ auto Sdk::check_response(const Response& t_response,
       Text::format(msg);
       t_progress.finish(false, msg);
     } else {
-      cerr << Text::format_message(Text::Message::ERROR, msg) << endl;
+      cerr << Text::format_message(Message::ERROR, msg) << endl;
     }
   }
   return false;

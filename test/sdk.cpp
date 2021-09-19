@@ -32,7 +32,7 @@ TEST_CASE("Install SDKs") {
   for (const auto a : sdk_apis) {
     const TmpDir home_dir;
     Env::setup(home_dir.get_entry());
-    Args args{{}, "-s"};
+    Args args{{}, "--set-up"};
 
     // Using separate namespace to restore standard
     // streams after the installation is complete.

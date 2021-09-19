@@ -14,16 +14,17 @@ using namespace std;
 using namespace jni;
 
 using namespace jvm_tools;
+using Jar = Sdk::Jar;
 
 Jvm::Jvm(const flags_t t_init_tools, const shared_ptr<const Sdk> t_sdk) {
   const auto heap_opts{get_heap_opts()};
   string classpath{"-Djava.class.path=" +
-                   t_sdk->get_jar_path(Sdk::Jar::APM_JNI).string()};
+                   t_sdk->get_jar_path(Jar::APM_JNI).string()};
   if ((t_init_tools & D8) != flags_t{}) {
-    classpath += ':' + t_sdk->get_jar_path(Sdk::Jar::D8).string();
+    classpath += ':' + t_sdk->get_jar_path(Jar::D8).string();
   }
   if ((t_init_tools & APKSIGNER) != flags_t{}) {
-    classpath += ':' + t_sdk->get_jar_path(Sdk::Jar::APKSIGNER).string();
+    classpath += ':' + t_sdk->get_jar_path(Jar::APKSIGNER).string();
   }
 
   array str_opts{heap_opts.first, heap_opts.second, classpath};
@@ -126,11 +127,11 @@ void Jvm::init_android_tools(const flags_t t_tools,
   // Don't require file existence since the constructor already checked it.
   if ((t_tools & D8) != flags_t{}) {
     m_d8_obj = tool.New(*m_env, tool_init,
-               Make<String>(*m_env, t_sdk->get_jar_path(Sdk::Jar::D8, false)));
+               Make<String>(*m_env, t_sdk->get_jar_path(Jar::D8, false)));
   }
   if ((t_tools & APKSIGNER) != flags_t{}) {
     m_apksigner_obj = tool.New(*m_env, tool_init,
-        Make<String>(*m_env, t_sdk->get_jar_path(Sdk::Jar::APKSIGNER, false)));
+        Make<String>(*m_env, t_sdk->get_jar_path(Jar::APKSIGNER, false)));
   }
 }
 

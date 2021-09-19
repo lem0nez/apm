@@ -12,6 +12,7 @@
 
 #include <doctest/doctest.h>
 #include "apm.hpp"
+#include "tmp_file.hpp"
 
 #include "internal/alt_stream.hpp"
 #include "internal/args.hpp"
@@ -56,6 +57,39 @@ TEST_CASE("Program's arguments") {
     REQUIRE(apm.run(a.get_argc(), a.get_argv()) == EXIT_FAILURE);
     REQUIRE((*alt_cerr).tellp() > streampos(0));
     (*alt_cerr).str({});
+  }
+}
+
+TEST_CASE("Set a Java KeyStore") {
+  constexpr auto OPTION{"--set-jks"};
+
+  const TmpDir home_dir;
+  Env::setup(home_dir.get_entry());
+
+  AltStream
+      alt_cout(cout),
+      alt_cerr(cerr);
+  error_condition err;
+  Apm apm(err);
+
+  {
+    const TmpFile tmp_file;
+    Args args{{}, OPTION, tmp_file.get_path()};
+    AltStream alt_cin(cin);
+    // Input: no alias name, a private key has a password.
+    (*alt_cin).str("\nyes\n");
+
+    CHECK(apm.run(args.get_argc(), args.get_argv()) == EXIT_SUCCESS);
+  }
+  CHECK((*alt_cerr).tellp() == streampos(0));
+
+  constexpr array invalid_paths{"/", "non-existent-file"};
+  for (const auto& p : invalid_paths) {
+    Args args{{}, OPTION, p};
+    (*alt_cerr).str({});
+
+    CHECK(apm.run(args.get_argc(), args.get_argv()) == EXIT_FAILURE);
+    CHECK((*alt_cerr).tellp() > streampos(0));
   }
 }
 

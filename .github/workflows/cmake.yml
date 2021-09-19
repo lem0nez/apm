@@ -121,7 +121,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: lem0nez/friendly-cli
-          ref: v1.3.0
+          ref: v1.4.0
           path: fcli
 
       - name: Install Friendly CLI

@@ -1,4 +1,4 @@
-name: CMake
+name: C++
 on: [push]
 env:
   BUILD_TYPE: Debug
@@ -7,7 +7,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      # Allow CodeQL to write security events.
       security-events: write
     strategy:
       matrix:

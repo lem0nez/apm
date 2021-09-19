@@ -1,0 +1,30 @@
+name: Java
+on: [push]
+env:
+  TARGET_JAVA_VERSION: 8
+  # Generate all debugging information.
+  JAVAC_DEBUG_OPT: -g
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      # Allow CodeQL to write security events.
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: java
+
+      - name: Build
+        run: |
+          javac --release=$TARGET_JAVA_VERSION $JAVAC_DEBUG_OPT -Xlint \
+                $(find java/ -type f -name '*.java')
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v1

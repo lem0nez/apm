@@ -124,7 +124,8 @@ jobs:
       - name: Install C++ Requests
         working-directory: cpr
         run: |
-          cmake . -DCPR_FORCE_USE_SYSTEM_CURL=ON -DCPR_BUILD_TESTS=OFF
+          cmake . -DCPR_FORCE_USE_SYSTEM_CURL=ON -DCPR_BUILD_TESTS=OFF \
+                  -DALL_SANITIZERS_AVAILABLE=OFF
           sudo make install
 
       - name: Checkout Friendly CLI

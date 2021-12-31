@@ -1,3 +1,4 @@
+HeaderFilterRegex: '(include|test)/.+\.(hpp|inl)$'
 Checks:
   bugprone-*,
   cert-*,
@@ -10,4 +11,5 @@ Checks:
   portability-*,
   readability-*,
 
+  -modernize-use-nodiscard,
   -readability-isolate-declaration

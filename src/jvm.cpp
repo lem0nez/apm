@@ -39,20 +39,20 @@ Jvm::Jvm(const flags_t t_init_tools, const shared_ptr<const Sdk> t_sdk) {
   args.nOptions = opts.size();
   args.options = opts.data();
 
-  void* env;
+  void* env{};
   if (JNI_CreateJavaVM(&m_vm, &env, static_cast<void*>(&args)) != jni_ok) {
     throw runtime_error("failed to create a VM");
   }
   m_env = static_cast<JNIEnv*>(env);
 
   safe_java_exec<void>(
-      bind(&Jvm::redirect_output, this), "failed to redirect standard output");
+      [this] { redirect_output(); }, "failed to redirect standard output");
   safe_java_exec<void>(
-      bind(&Jvm::set_security_manager, this), "failed to set SecurityManager");
+      [this] { set_security_manager(); }, "failed to set SecurityManager");
 
   if ((t_init_tools & JAVAC) != flags_t{}) {
     safe_java_exec<void>(
-        bind(&Jvm::init_javac, this), "failed to initialize the Java compiler");
+        [this] { init_javac(); }, "failed to initialize the Java compiler");
   }
   if ((t_init_tools & (D8 | APKSIGNER)) != flags_t{}) {
     safe_java_exec<void>([&] {

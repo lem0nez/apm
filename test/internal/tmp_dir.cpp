@@ -15,7 +15,7 @@ using namespace filesystem;
 
 TmpDir::TmpDir() {
   string path_template(temp_directory_path() / NAME_TEMPLATE);
-  const auto path_ptr{mkdtemp(path_template.data())};
+  const auto* const path_ptr{mkdtemp(path_template.data())};
   if (path_ptr == nullptr) {
     throw runtime_error("failed to create a temporary directory");
   }

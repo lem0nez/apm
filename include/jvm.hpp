@@ -86,9 +86,10 @@ private:
   void redirect_output();
   void set_security_manager() const;
   void init_javac();
-  void init_android_tools(jvm_tools::flags_t, std::shared_ptr<const Sdk>);
+  void init_android_tools(
+      jvm_tools::flags_t tools, std::shared_ptr<const Sdk> sdk);
 
-  [[nodiscard]] auto make_args(const std::vector<std::string>&) const ->
+  [[nodiscard]] auto make_args(const std::vector<std::string>& args) const ->
       jni::Local<jni::Array<jni::String>>;
   void reset_output() const;
   // Assigns captured outputs since the last reset_output call.

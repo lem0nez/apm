@@ -72,7 +72,7 @@ public:
   static auto check_cin() -> bool;
   /*
    * This function must be called before switching to std::getline after
-   * whitespace-delimited input (e. g., via operator >>). If you don't,
+   * whitespace-delimited input (e. g., via operator >>). If you don't,
    * std::getline just will return immediately.
    */
   static inline auto ignore_cin_line() -> std::istream& {
@@ -92,7 +92,7 @@ public:
 
   // Returns empty string on failure.
   [[nodiscard]] static auto calc_sha256(
-      const std::filesystem::path&) -> std::string;
+      const std::filesystem::path& path) -> std::string;
 
   /*
    * Executes a command in a new process. If a callback is provided, it will be

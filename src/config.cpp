@@ -17,7 +17,7 @@ Config::Config() {
   using namespace fcli;
   using namespace pugi;
 
-  auto env_dir{getenv("XDG_CONFIG_HOME")};
+  auto* env_dir{getenv("XDG_CONFIG_HOME")};
   path dir;
 
   if (env_dir != nullptr) {

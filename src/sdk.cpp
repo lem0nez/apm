@@ -35,7 +35,7 @@ using namespace libzippp;
 using namespace pugi;
 
 Sdk::Sdk() {
-  auto env_dir{getenv("XDG_DATA_HOME")};
+  auto* env_dir{getenv("XDG_DATA_HOME")};
   if (env_dir != nullptr) {
     m_root_dir_path = path(env_dir) / ROOT_DIR_NAME;
   } else {

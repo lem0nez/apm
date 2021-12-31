@@ -14,7 +14,7 @@
 // (via getters) to the Apm's run function.
 class Args {
 public:
-  Args(std::initializer_list<std::string>);
+  Args(std::initializer_list<std::string> argv);
   // Return by reference so the run function can change a value.
   [[nodiscard]] inline auto get_argc() -> int& { return m_argc; }
   [[nodiscard]] inline auto get_argv() { return m_argv.data(); }

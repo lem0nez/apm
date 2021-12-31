@@ -92,9 +92,10 @@ private:
 
   // It must return program execution status.
   using fail_func_t = int (std::string_view msg);
-  static auto check_output_apk(
-      const std::filesystem::path&, const std::function<fail_func_t>&) -> int;
-  auto check_sdk(const Apm&, const std::function<fail_func_t>&) const -> int;
+  static auto check_output_apk(const std::filesystem::path& path,
+      const std::function<fail_func_t>& fail_func) -> int;
+  auto check_sdk(const Apm& apm,
+                 const std::function<fail_func_t>& fail_func) const -> int;
 
   [[nodiscard]] static auto request_app_name() -> std::string;
   [[nodiscard]] static auto request_package() -> std::string;

@@ -13,3 +13,13 @@ Checks:
 
   -modernize-use-nodiscard,
   -readability-isolate-declaration
+
+CheckOptions:
+  - key: bugprone-reserved-identifier.AllowedIdentifiers
+    # This field used to store the total number of fields in enumerators.
+    value: _COUNT
+  # Set the same option for aliases.
+  - key: cert-dcl37-c.AllowedIdentifiers
+    value: _COUNT
+  - key: cert-dcl51-cpp.AllowedIdentifiers
+    value: _COUNT

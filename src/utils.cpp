@@ -144,7 +144,8 @@ auto Utils::download(ofstream& t_ofs, const Url& t_url,
     prev_refresh = current_time;
 
     if (t_progress.is_determined()) {
-      t_progress = static_cast<double>(downloaded * 100U) / download_total;
+      t_progress = static_cast<double>(downloaded * 100U) /
+                   static_cast<double>(download_total);
     }
 
     if (!t_append_size) {
@@ -285,7 +286,7 @@ auto Utils::exec(const vector<string>& t_cmd,
   }
 
   ips.close();
-  const auto buf{ips.rdbuf()};
+  auto* const buf{ips.rdbuf()};
   if (!buf->exited()) {
     throw runtime_error("a process isn't exited");
   }

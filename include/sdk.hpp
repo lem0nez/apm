@@ -127,7 +127,8 @@ private:
       std::string_view failure_msg, fcli::Progress& progress,
       bool fail_using_progress = true) -> bool;
   // Gets value of sha256 attribute. Returns empty string on failure.
-  [[nodiscard]] static auto get_sha256(const pugi::xml_node&) -> std::string;
+  [[nodiscard]] static auto get_sha256(
+      const pugi::xml_node& node) -> std::string;
   /*
    * Sets progress as undetermined, changes its text, compares checksums and if
    * they are not equal, finishes progress with the failure message and returns

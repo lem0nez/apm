@@ -38,7 +38,7 @@ void Env::unset(const string_view t_var_name) {
 
 auto Env::get_jvm() -> shared_ptr<Jvm> {
   if (!s_jvm) {
-    const auto home{getenv("HOME")};
+    const auto* const home{getenv("HOME")};
     setup(s_sdk_home);
     s_jvm = make_shared<Jvm>(jvm_tools::ALL, make_shared<const Sdk>());
     if (home != nullptr) {

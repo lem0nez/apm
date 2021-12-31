@@ -6,8 +6,6 @@
 
 #include <cstdlib>
 #include <stdexcept>
-#include <system_error>
-
 #include <fcli/terminal.hpp>
 
 #include "config.hpp"
@@ -19,7 +17,7 @@ Config::Config() {
   using namespace fcli;
   using namespace pugi;
 
-  auto env_dir{getenv("XDG_CONFIG_HOME")};
+  auto* env_dir{getenv("XDG_CONFIG_HOME")};
   path dir;
 
   if (env_dir != nullptr) {
@@ -32,23 +30,12 @@ Config::Config() {
     dir = path(env_dir) / ".config";
   }
 
-  error_code err;
   // If directories already exist, the function does nothing.
-  create_directories(dir, err);
-  if (err) {
-    throw filesystem_error(
-        "failed to create directory \"" + dir.string() + '"', err);
-  }
-
+  create_directories(dir);
   m_file_path = dir / FILE_NAME;
-  const auto file_exists{exists(m_file_path, err)};
-  if (err) {
-    throw filesystem_error(
-        "failed to check if file \"" + m_file_path.string() + "\" exists", err);
-  }
 
   const string root_node_name(ROOT_NODE_NAME);
-  if (!file_exists) {
+  if (!exists(m_file_path)) {
     m_doc.append_child(root_node_name.c_str());
     if (!save()) {
       throw runtime_error(
@@ -86,4 +73,26 @@ Config::Config() {
   if (!theme_applied) {
     throw runtime_error("failed to apply a theme");
   }
+}
+
+auto Config::remove(const Key t_key, const bool t_save_file) -> bool {
+  const auto node{m_root_node.child(string(get_key_name(t_key)).c_str())};
+  if (!node) {
+    return true;
+  }
+
+  if (!m_root_node.remove_child(node)) {
+    return false;
+  }
+  if (t_save_file) {
+    return save();
+  }
+  return true;
+}
+
+auto Config::save() const -> bool {
+  if (m_file_path.empty()) {
+    return true;
+  }
+  return m_doc.save_file(m_file_path.c_str(), {}, pugi::format_raw);
 }

@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "sdk.hpp"
 #include "internal/env.hpp"
 
 using namespace std;
@@ -33,6 +34,18 @@ void Env::unset(const string_view t_var_name) {
     throw runtime_error("failed to unset the \"" + string(t_var_name) +
                         "\" environment variable");
   }
+}
+
+auto Env::get_jvm() -> shared_ptr<Jvm> {
+  if (!s_jvm) {
+    const auto* const home{getenv("HOME")};
+    setup(s_sdk_home);
+    s_jvm = make_shared<Jvm>(jvm_tools::ALL, make_shared<const Sdk>());
+    if (home != nullptr) {
+      set("HOME", home);
+    }
+  }
+  return s_jvm;
 }
 
 void Env::unset_xdg_vars() {

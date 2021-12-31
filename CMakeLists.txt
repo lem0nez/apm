@@ -28,17 +28,28 @@ find_package(cxxopts 2.2 REQUIRED)
 find_package(pugixml 1.11 REQUIRED)
 find_package(libzippp 3.0 REQUIRED)
 
+# At least version 1.8 is required.
+find_package(JNI REQUIRED)
+# Version of the JNI wrapper by Mapbox must be at least 4.0.1.
+find_path(JNI_HPP_INCLUDE jni/jni.hpp REQUIRED)
+
+# At least version 1.0.3 of PStreams by Jonathan Wakely is required.
+find_path(PSTREAMS_INCLUDE pstreams/pstream.h REQUIRED)
+
 # Minimum version of cpr must be 1.6.2 and
 # it must be compiled with the SSL back-end.
-find_path(CPR_INCLUDE NAMES cpr/cpr.h cpr.h REQUIRED)
+find_path(CPR_INCLUDE cpr/cpr.h REQUIRED)
 find_library(CPR_LIB cpr REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 # Using IMPORTED_TARGET to create a target
 # that will be passed to target_link_libraries.
-pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.3)
+pkg_check_modules(FCLI REQUIRED IMPORTED_TARGET fcli>=1.4)
 
 set(INCLUDE_DIRS
+  ${JNI_INCLUDE_DIRS}
+  ${JNI_HPP_INCLUDE}
+  ${PSTREAMS_INCLUDE}
   ${CPR_INCLUDE}
   include/
 )
@@ -50,6 +61,7 @@ set(LIBS
   cxxopts::cxxopts
   pugixml::pugixml
   libzippp::libzippp
+  ${JNI_LIBRARIES}
   ${CPR_LIB}
   PkgConfig::FCLI
 )
@@ -61,6 +73,8 @@ set(LIBS
 set(SOURCES
   src/apm.cpp
   src/config.cpp
+  src/jvm.cpp
+  src/project.cpp
   src/sdk.cpp
   src/utils.cpp
 )
@@ -99,8 +113,12 @@ set(TEST_SOURCES
   test/internal/tmp_dir.cpp
   test/main.cpp
 
+  test/general/scope_guard.cpp
+
   test/apm.cpp
   test/config.cpp
+  test/jvm.cpp
+  test/project.cpp
   test/sdk.cpp
   test/tmp_file.cpp
   test/utils.cpp

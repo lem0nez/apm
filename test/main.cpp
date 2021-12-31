@@ -40,8 +40,8 @@ auto main(int argc, char* argv[]) -> int {
     }
     Env::set_sdk_home(sdk_home);
   } else {
-    // TODO: exclude test cases.
-    // context.addFilter("test-case-exclude", "");
+    // Persistent TODO: exclude SDK dependent test cases.
+    context.addFilter("test-case-exclude", "Create projects,JVM tools");
   }
 
   const auto status{context.run()};
@@ -57,5 +57,8 @@ Hint: to install SDK to <dir>, use the following command:
 $ env --ignore-environment HOME=<dir> <apm executable> --set-up)" << endl;
     }
   }
+  // Destroy JVM before exiting due to OpenJDK bug
+  // (https://bugs.openjdk.java.net/browse/JDK-8166727).
+  Env::release_jvm();
   return status;
 }

@@ -7,19 +7,20 @@
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
-#include <fcli/theme.hpp>
+#include <string>
+#include <string_view>
 
 #include <doctest/doctest.h>
-#include "config.hpp"
+#include <fcli/theme.hpp>
 
+#include "config.hpp"
 #include "internal/env.hpp"
 #include "internal/tmp_dir.hpp"
 
 using namespace std;
+using namespace filesystem;
 
 TEST_CASE("Config constructor") {
-  using namespace filesystem;
-
   Env::unset("XDG_CONFIG_HOME");
   Env::unset("HOME");
   CHECK_THROWS_AS(Config(), runtime_error);
@@ -64,8 +65,29 @@ TEST_CASE("Apply configurations") {
   CHECK(Config().get<Theme::Name>(Config::Key::THEME) ==
         Theme::Name::MATERIAL_LIGHT);
 
+  // Try another keys and value types.
   Config config;
-  // Try another key and value type.
+
   REQUIRE(config.apply<unsigned short>(Config::Key::SDK, 1U));
   CHECK(config.get<unsigned short>(Config::Key::SDK) == 1U);
+
+  REQUIRE(config.apply<string_view>(Config::Key::JKS_PATH, "path"));
+  CHECK(config.get<path>(Config::Key::JKS_PATH) == "path");
+
+  config.unbind_file();
+  REQUIRE(config.apply<bool>(Config::Key::JKS_KEY_HAS_PASSWORD, true));
+  CHECK(*config.get<bool>(Config::Key::JKS_KEY_HAS_PASSWORD));
+}
+
+TEST_CASE("Remove configurations") {
+  const TmpDir home_dir;
+  Env::setup(home_dir.get_entry());
+
+  Config config;
+  // Non-existent configuration.
+  CHECK(config.remove(Config::Key::THEME));
+
+  REQUIRE(config.apply<string>(Config::Key::JKS_KEY_ALIAS, "name"));
+  REQUIRE(config.remove(Config::Key::JKS_KEY_ALIAS));
+  CHECK_FALSE(config.get<string>(Config::Key::JKS_KEY_ALIAS).has_value());
 }

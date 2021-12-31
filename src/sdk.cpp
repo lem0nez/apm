@@ -7,7 +7,7 @@
 #include <array>
 #include <cstdlib>
 #include <functional>
-#include <limits>
+#include <iostream>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -19,7 +19,7 @@
 #include <cpr/status_codes.h>
 #include <fcli/text.hpp>
 
-#include "enum_array.hpp"
+#include "general/enum_array.hpp"
 #include "sdk.hpp"
 #include "utils.hpp"
 
@@ -28,13 +28,14 @@ using namespace filesystem;
 
 using namespace fcli;
 using namespace fcli::literals;
+using Message = Text::Message;
 
 using namespace cpr;
 using namespace libzippp;
 using namespace pugi;
 
 Sdk::Sdk() {
-  auto env_dir{getenv("XDG_DATA_HOME")};
+  auto* env_dir{getenv("XDG_DATA_HOME")};
   if (env_dir != nullptr) {
     m_root_dir_path = path(env_dir) / ROOT_DIR_NAME;
   } else {
@@ -51,12 +52,12 @@ Sdk::Sdk() {
 // -------------------- +
 
 auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
-    const unsigned short t_installed_api, istream& t_istream) -> int {
+                  const unsigned short t_installed_api) -> int {
   if (t_installed_api != 0U) {
     cout << Text::format_copy("You have already installed SDK with API <b>" +
             to_string(t_installed_api) + "<r>.\nDo you want to override it?") <<
             endl;
-    if (!Utils::request_confirm(false, t_istream)) {
+    if (!Utils::request_confirm(false)) {
       return EXIT_SUCCESS;
     }
   }
@@ -73,7 +74,7 @@ auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
     return EXIT_FAILURE;
   }
 
-  const auto api{request_api(manifest, t_istream)};
+  const auto api{request_api(manifest)};
   if (api == 0U) {
     return EXIT_FAILURE;
   }
@@ -104,10 +105,11 @@ auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
     // Request confirmation before updating of
     // API independent files if all of them exist.
     bool confirm_update{true};
-    error_code fs_err;
 
     for (size_t f{}; f != size<File>(); ++f) {
-      if (!exists(get_file_path(static_cast<File>(f)), fs_err) || fs_err) {
+      try {
+        static_cast<void>(get_file_path(static_cast<File>(f)));
+      } catch (const runtime_error&) {
         confirm_update = false;
         break;
       }
@@ -115,7 +117,7 @@ auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
 
     if (confirm_update) {
       cout << "Do you want to update API independent files?" << endl;
-      if (!Utils::request_confirm(true, t_istream)) {
+      if (!Utils::request_confirm(true)) {
         install_api_independent_files = false;
       }
       if (install_api_independent_files) {
@@ -125,11 +127,15 @@ auto Sdk::install(const shared_ptr<Config> t_config, const Terminal& t_term,
   }
 
   if (install_api_independent_files) {
-    if (!install_tzdata(manifest, tmp_file, get_progress_width())) {
-      return EXIT_FAILURE;
-    }
-    if (!install_assets(manifest, get_progress_width())) {
-      return EXIT_FAILURE;
+    const array<function<bool()>, 3U> api_independent_install_funcs{
+      [&] { return download_apm_jar(manifest, get_progress_width()); },
+      [&] { return install_tzdata(manifest, tmp_file, get_progress_width()); },
+      [&] { return download_assets(manifest, get_progress_width()); }
+    };
+    for (const auto& f : api_independent_install_funcs) {
+      if (!f()) {
+        return EXIT_FAILURE;
+      }
     }
   }
 
@@ -164,7 +170,7 @@ auto Sdk::download_manifest(
   const auto parse_result{doc.load_string(response.text.c_str())};
 
   if (parse_result.status != status_ok) {
-    cerr << Text::format_message(Text::Message::ERROR,
+    cerr << Text::format_message(Message::ERROR,
             "Couldn't parse the manifest file. "s +
             parse_result.description()) << endl;
     return {};
@@ -172,8 +178,7 @@ auto Sdk::download_manifest(
   return doc;
 }
 
-auto Sdk::request_api(const xml_document& t_manifest,
-    istream& t_istream) -> unsigned short {
+auto Sdk::request_api(const xml_document& t_manifest) -> unsigned short {
   const auto api_attrs{t_manifest.select_nodes("/manifest/tools/set/@api")};
   set<unsigned short> apis;
 
@@ -183,13 +188,9 @@ auto Sdk::request_api(const xml_document& t_manifest,
       apis.emplace(val);
     }
   }
-
   if (apis.empty()) {
     cerr << "No available API versions found"_err << endl;
     return {};
-  }
-  if (apis.size() == 1U) {
-    return *apis.cbegin();
   }
 
   cout << "Choose API version:" << endl;
@@ -201,19 +202,19 @@ auto Sdk::request_api(const xml_document& t_manifest,
   unsigned short api{};
   while (true) {
     cout << "version> <b>"_fmt << flush;
-    t_istream >> api;
+    cin >> api;
     cout << "<r>"_fmt << flush;
 
-    if (!t_istream) {
-      cerr << "Invalid input! Try again"_err << endl;
-      t_istream.clear();
-      t_istream.ignore(numeric_limits<streamsize>::max(), '\n');
-    } else if (apis.count(api) == 0U) {
+    if (!Utils::check_cin()) {
+      continue;
+    }
+    if (apis.count(api) == 0U) {
       cerr << "Wrong version! Try again"_err << endl;
     } else {
       break;
     }
   }
+  Utils::ignore_cin_line();
   return api;
 }
 
@@ -223,14 +224,9 @@ void Sdk::create_dirs() const {
     m_root_dir_path / TOOLS_SUBDIR_NAME,
     m_root_dir_path / JARS_SUBDIR_NAME
   };
-  error_code fs_err;
 
   for (const auto& p : paths) {
-    create_directories(p, fs_err);
-    if (fs_err) {
-      throw filesystem_error(
-          "failed to create directory \"" + p.string() + '"', fs_err);
-    }
+    create_directories(p);
   }
 }
 
@@ -442,7 +438,7 @@ auto Sdk::install_framework(const xml_document& t_manifest,
     return false;
   }
 
-  if (!extract_zip_entry(entry, get_jar_path(Jar::FRAMEWORK),
+  if (!extract_zip_entry(entry, get_jar_path(Jar::FRAMEWORK, false),
       framework_path.filename().string(), progress)) {
     return false;
   }
@@ -454,6 +450,66 @@ auto Sdk::install_framework(const xml_document& t_manifest,
 // --------------------- +
 // API independent files |
 // --------------------- +
+
+auto Sdk::download_apm_jar(const xml_document& t_manifest,
+    const unsigned short t_progress_width) const -> bool {
+  Progress progress("Preparing to download apm-jni.jar",
+                    false, t_progress_width);
+  progress.show();
+
+  string version(APM_VERSION);
+  auto xpath_node{t_manifest.select_node(
+                  "/manifest/apm-jni/jar[text()='" APM_VERSION "']")};
+  if (!xpath_node) {
+    progress.finish(false,
+        "Couldn't find apm-jni.jar of version <b>" APM_VERSION "<r>"_fmt);
+    return false;
+  }
+  if (const auto ref_attr{xpath_node.node().attribute("ref")}; ref_attr) {
+    version = ref_attr.as_string();
+    xpath_node = t_manifest.select_node(
+                 ("/manifest/apm-jni/jar[text()='" + version + "']").c_str());
+    if (!xpath_node) {
+      progress.finish(false, Text::format_copy(
+                      "Couldn't find referenced apm-jni.jar of version <b>" +
+                      version + "<r>"));
+      return false;
+    }
+  }
+  const auto node{xpath_node.node()};
+
+  const auto checksum{get_sha256(node)};
+  if (checksum.empty()) {
+    progress.finish(false, "Checksum of apm-jni.jar doesn't exist");
+    return false;
+  }
+
+  const auto output_path{get_jar_path(Jar::APM_JNI, false)};
+  ofstream ofs(output_path, ios::binary);
+  if (!ofs) {
+    progress.finish(false,
+        "Couldn't download apm-jni.jar: failed to open output file \"" +
+        output_path.string() + '"');
+    return false;
+  }
+
+  progress = "Downloading apm-jni.jar";
+  const Url url(string(REPO_RAW_URL_PREFIX) + "apm-jni/" +
+                node.text().as_string() + ".jar");
+  const auto response{Download(ofs, url)};
+  ofs.close();
+
+  if (!check_response_and_sha256(response,
+      output_path, checksum, "apm-jni.jar", progress)) {
+    error_code err;
+    remove(output_path, err);
+    return false;
+  }
+
+  progress.finish(true,
+      Text::format_copy("apm-jni.jar <u>" + version + "<r> downloaded"));
+  return true;
+}
 
 auto Sdk::install_tzdata(
     const xml_document& t_manifest, TmpFile<ofstream>& t_tmp_file,
@@ -496,7 +552,7 @@ auto Sdk::install_tzdata(
     return false;
   }
 
-  const auto output_path{get_file_path(File::TZDATA)};
+  const auto output_path{get_file_path(File::TZDATA, false)};
   const string name(output_path.filename());
   const auto entry{zip.getEntry(name)};
 
@@ -514,7 +570,7 @@ auto Sdk::install_tzdata(
   return true;
 }
 
-auto Sdk::install_assets(const xml_document& t_manifest,
+auto Sdk::download_assets(const xml_document& t_manifest,
     const unsigned short t_progress_width) const -> bool {
   Progress progress("Preparing to download assets", false, t_progress_width);
   progress.show();
@@ -526,8 +582,8 @@ auto Sdk::install_assets(const xml_document& t_manifest,
   }
 
   const EnumArray<File, path> output_paths{
-    get_file_path(File::DEBUG_KEYSTORE),
-    get_file_path(File::PROJECT_TEMPLATE)
+    get_file_path(File::DEBUG_KEYSTORE, false),
+    get_file_path(File::PROJECT_TEMPLATE, false)
     // TZDATA doesn't required.
   };
 
@@ -607,7 +663,7 @@ auto Sdk::check_response(const Response& t_response,
     if (t_fail_using_progress) {
       t_progress.finish(false, msg);
     } else {
-      cerr << Text::format_message(Text::Message::ERROR, msg) << endl;
+      cerr << Text::format_message(Message::ERROR, msg) << endl;
     }
   } else {
     auto msg{string(t_failure_msg) + " (status code <b>" +
@@ -617,7 +673,7 @@ auto Sdk::check_response(const Response& t_response,
       Text::format(msg);
       t_progress.finish(false, msg);
     } else {
-      cerr << Text::format_message(Text::Message::ERROR, msg) << endl;
+      cerr << Text::format_message(Message::ERROR, msg) << endl;
     }
   }
   return false;
@@ -684,19 +740,49 @@ auto Sdk::extract_zip_entry(const ZipEntry& t_entry, const path& t_output_path,
 // Getters |
 // ------- +
 
-auto Sdk::get_tool_path(const Tool t_tool) const -> path {
-  const EnumArray<Tool, string> names{"aapt2", "zipalign"};
-  return m_root_dir_path / TOOLS_SUBDIR_NAME / names.get(t_tool);
+auto Sdk::get_tool_path(const Tool t_tool,
+                        const bool t_must_exist) const -> path {
+  const EnumArray<Tool, string> names{
+    "aapt2", "zipalign"
+  };
+
+  const auto path{m_root_dir_path / TOOLS_SUBDIR_NAME / names.get(t_tool)};
+  if (t_must_exist) {
+    error_code err;
+    if (!is_regular_file(path, err)) {
+      throw runtime_error("tool \"" + path.string() + "\" doesn't exist");
+    }
+  }
+  return path;
 }
 
-auto Sdk::get_jar_path(const Jar t_jar) const -> path {
-  const EnumArray<Jar, string> names{"apksigner.jar", "d8.jar", "android.jar"};
-  return m_root_dir_path / JARS_SUBDIR_NAME / names.get(t_jar);
+auto Sdk::get_jar_path(const Jar t_jar, const bool t_must_exist) const -> path {
+  const EnumArray<Jar, string> names{
+    "apm-jni.jar", "apksigner.jar", "d8.jar", "android.jar"
+  };
+
+  const auto path{m_root_dir_path / JARS_SUBDIR_NAME / names.get(t_jar)};
+  if (t_must_exist) {
+    error_code err;
+    if (!is_regular_file(path, err)) {
+      throw runtime_error("JAR file \"" + path.string() + "\" doesn't exist");
+    }
+  }
+  return path;
 }
 
-auto Sdk::get_file_path(const File t_file) const -> path {
+auto Sdk::get_file_path(const File t_file,
+                        const bool t_must_exist) const -> path {
   const EnumArray<File, string> names{
     "debug.jks", "project-template.zip", "tzdata"
   };
-  return m_root_dir_path / names.get(t_file);
+
+  const auto path{m_root_dir_path / names.get(t_file)};
+  if (t_must_exist) {
+    error_code err;
+    if (!is_regular_file(path, err)) {
+      throw runtime_error("file \"" + path.string() + "\" doesn't exist");
+    }
+  }
+  return path;
 }

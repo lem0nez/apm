@@ -8,7 +8,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -24,12 +23,14 @@
 #include "tmp_file.hpp"
 
 /*
- * This class has two aims:
- * 1. download and install files, that required to build application;
+ * This class has two main aims:
+ * 1. download and install files, that required to build applications;
  * 2. provide paths to this files.
  */
 class Sdk {
 public:
+  static constexpr std::string_view DEBUG_KEYSTORE_PASSWORD{"android"};
+
   enum class Tool {
     // Compiles and packages APK's resources.
     AAPT2,
@@ -40,6 +41,7 @@ public:
   };
 
   enum class Jar {
+    APM_JNI,
     APKSIGNER,
     // Compiles Java bytecode to Android-compatible DEX bytecode.
     D8,
@@ -62,15 +64,18 @@ public:
   // Assigns (doesn't create) the root directory path.
   Sdk();
   // Starts interactive installation process. If SDK already installed,
-  // then API version should be passed. Returns exit status.
-  auto install(std::shared_ptr<Config> config,
-      const fcli::Terminal& term, unsigned short installed_api = {},
-      std::istream& istream = std::cin) -> int;
+  // then API version should be passed. Returns program execution status.
+  auto install(std::shared_ptr<Config> config, const fcli::Terminal& term,
+               unsigned short installed_api = {}) -> int;
 
-  // These functions don't guarantee that a file exists.
-  [[nodiscard]] auto get_tool_path(Tool) const -> std::filesystem::path;
-  [[nodiscard]] auto get_jar_path(Jar) const -> std::filesystem::path;
-  [[nodiscard]] auto get_file_path(File) const -> std::filesystem::path;
+  // If must_exist set to true and a file
+  // doesn't exist, runtime_error will be thrown.
+  [[nodiscard]] auto get_tool_path(
+      Tool tool, bool must_exist = true) const -> std::filesystem::path;
+  [[nodiscard]] auto get_jar_path(
+      Jar jar, bool must_exist = true) const -> std::filesystem::path;
+  [[nodiscard]] auto get_file_path(
+      File file, bool must_exist = true) const -> std::filesystem::path;
 
 private:
   static constexpr std::string_view
@@ -85,8 +90,8 @@ private:
   [[nodiscard]] static auto download_manifest(
       unsigned short progress_width) -> pugi::xml_document;
   // Returns zero on failure.
-  [[nodiscard]] static auto request_api(const pugi::xml_document& manifest,
-      std::istream& istream = std::cin) -> unsigned short;
+  [[nodiscard]] static auto
+      request_api(const pugi::xml_document& manifest) -> unsigned short;
   // Throws an exception of failure.
   void create_dirs() const;
 
@@ -105,11 +110,12 @@ private:
       install_build_tools,
       install_framework;
 
+  auto download_apm_jar(const pugi::xml_document& manifest,
+      unsigned short progress_width) const -> bool;
   auto install_tzdata(
       const pugi::xml_document& manifest, TmpFile<std::ofstream>& tmp_file,
       unsigned short progress_width) const -> bool;
-  // NOLINTNEXTLINE(modernize-use-nodiscard)
-  auto install_assets(const pugi::xml_document& manifest,
+  auto download_assets(const pugi::xml_document& manifest,
       unsigned short progress_width) const -> bool;
 
   /*
@@ -121,7 +127,8 @@ private:
       std::string_view failure_msg, fcli::Progress& progress,
       bool fail_using_progress = true) -> bool;
   // Gets value of sha256 attribute. Returns empty string on failure.
-  [[nodiscard]] static auto get_sha256(const pugi::xml_node&) -> std::string;
+  [[nodiscard]] static auto get_sha256(
+      const pugi::xml_node& node) -> std::string;
   /*
    * Sets progress as undetermined, changes its text, compares checksums and if
    * they are not equal, finishes progress with the failure message and returns

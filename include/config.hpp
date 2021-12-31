@@ -8,19 +8,27 @@
 
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <type_traits>
 
 #include <fcli/theme.hpp>
 #include <pugixml.hpp>
 
-#include "enum_array.hpp"
+#include "general/enum_array.hpp"
 
 class Config {
 public:
   enum class Key {
     THEME,
     SDK,
+
+    // Path of the Java KeyStore file that
+    // used for signing the release APK files.
+    JKS_PATH,
+    JKS_KEY_ALIAS,
+    JKS_KEY_HAS_PASSWORD,
+
     _COUNT
   };
 
@@ -43,9 +51,10 @@ public:
   template<typename T>
   [[nodiscard]] auto get(Key key) const -> std::optional<T>;
 
-  // NOLINTNEXTLINE(modernize-use-nodiscard)
-  inline auto save() const -> bool
-      { return m_doc.save_file(m_file_path.c_str(), {}, pugi::format_raw); }
+  auto remove(Key key, bool save_file = true) -> bool;
+  // Use it if you don't want to preserve changes to file on destruction.
+  inline void unbind_file() { m_file_path.clear(); }
+  auto save() const -> bool;
 
 private:
   static constexpr std::string_view
@@ -56,7 +65,7 @@ private:
   // Since this is a constexpr function, we can return a string_view object.
   [[nodiscard]] static constexpr auto get_key_name(const Key key) {
     return EnumArray<Key, std::string_view>{
-      "theme", "sdk"
+      "theme", "sdk", "jks", "jks-key", "jks-key-has-password"
     }.get(key);
   }
 

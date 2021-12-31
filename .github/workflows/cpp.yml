@@ -1,19 +1,30 @@
-name: CMake
-on: [push]
+name: C++
+on: [push, pull_request]
 env:
   BUILD_TYPE: Release
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
     strategy:
       matrix:
         compiler: [g++, clang++]
+        jdk-version: [8, 11, 13, 16]
         sdk-api: [28]
 
     steps:
+      - name: Update APT package lists
+        run: sudo apt update
+
       - name: Checkout APM
         uses: actions/checkout@v2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: cpp
 
       - name: Checkout cxxopts
         uses: actions/checkout@v2
@@ -69,6 +80,37 @@ jobs:
           cmake . -DLIBZIPPP_BUILD_TESTS=OFF
           sudo make install
 
+      - name: Install OpenJDK
+        env:
+          VERSION: ${{ matrix.jdk-version }}
+        run: sudo apt install openjdk-$VERSION-jdk
+
+      - name: Checkout JNI wrapper
+        uses: actions/checkout@v2
+        with:
+          repository: mapbox/jni.hpp
+          ref: v4.0.1
+          path: jni-hpp
+
+      - name: Install JNI wrapper
+        working-directory: jni-hpp
+        run: |
+          sudo install --mode=644 -D \
+              --target-directory=/usr/local/include/jni/ include/jni/*
+
+      - name: Checkout PStreams
+        uses: actions/checkout@v2
+        with:
+          repository: jwakely/pstreams
+          ref: 012f33d55222552bf84087a4e1e3ced6ecae203d # v1.0.3
+          path: pstreams
+
+      - name: Install PStreams
+        working-directory: pstreams
+        run: |
+            sudo install --mode=644 -D \
+                --target-directory=/usr/local/include/pstreams/ pstream.h
+
       - name: Install cURL library
         run: sudo apt install libcurl4-openssl-dev
 
@@ -82,14 +124,15 @@ jobs:
       - name: Install C++ Requests
         working-directory: cpr
         run: |
-          cmake . -DCPR_FORCE_USE_SYSTEM_CURL=ON -DCPR_BUILD_TESTS=OFF
+          cmake . -DCPR_FORCE_USE_SYSTEM_CURL=ON -DCPR_BUILD_TESTS=OFF \
+                  -DALL_SANITIZERS_AVAILABLE=OFF
           sudo make install
 
       - name: Checkout Friendly CLI
         uses: actions/checkout@v2
         with:
           repository: lem0nez/friendly-cli
-          ref: v1.3.0
+          ref: v1.4.0
           path: fcli
 
       - name: Install Friendly CLI
@@ -118,19 +161,22 @@ jobs:
         working-directory: build
         env:
           CXX: ${{ matrix.compiler }}
+          JAVA_HOME: /usr/lib/jvm/java-${{ matrix.jdk-version }}-openjdk-amd64
         run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
       - name: Build
         run: cmake --build build/
 
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v1
+
       - name: Install SDK
         env:
-          HOME: sdk
           API: ${{ matrix.sdk-api }}
-        run: ./build/apm --set-up <<< $API
+        run: env --ignore-environment HOME=sdk build/apm --set-up <<< $API
 
       - name: Test
-        run: ./build/test --duration --sdk-home=sdk/
+        run: build/test --duration --sdk-home=sdk/
 
       - name: Install
         run: sudo cmake --install build/

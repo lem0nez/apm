@@ -8,12 +8,14 @@
 
 #include <filesystem>
 #include <memory>
+#include <string_view>
 #include <system_error>
 
 #include <cxxopts.hpp>
 #include <fcli/terminal.hpp>
 
 #include "config.hpp"
+#include "project.hpp"
 #include "sdk.hpp"
 
 class Apm {
@@ -38,6 +40,14 @@ public:
       { return m_sdk; }
 
 private:
+  // Displays a progress before instantiating.
+  [[nodiscard]] auto instantiate_project(
+      const std::filesystem::path& root_dir) const -> Project;
+  // Stores result in the is_debug_build parameter
+  // on success. Returns false on failure.
+  static auto parse_build_type(
+      std::string_view type, bool& is_debug_build) -> bool;
+
   cxxopts::Options m_opts;
   fcli::Terminal m_term;
   // Using pointers, since exceptions, that

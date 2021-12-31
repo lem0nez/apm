@@ -10,7 +10,6 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 #include <utility>
 
 #include <fcli/progress.hpp>
@@ -18,7 +17,6 @@
 #include <fcli/theme.hpp>
 
 #include "apm.hpp"
-#include "project.hpp"
 #include "utils.hpp"
 
 using namespace std;
@@ -136,7 +134,7 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
     break;
   }
 
-  Project project;
+  unique_ptr<Project> project;
   // Iterate through options that require an instance of existence project.
   for (const auto& o : {"build"}) {
     if (parse_result->count(o) == 0U) {
@@ -144,20 +142,7 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
     }
 
     try {
-      /*
-       * Show a progress because the Project constructor deals with file system
-       * operations, performance of which depend on storage type and may be
-       * slow.
-       */
-      constexpr string_view PROGRESS_TEXT{"Loading the project"};
-      constexpr unsigned short
-          MAX_PROGRESS_WIDTH{PROGRESS_TEXT.length() + 10U},
-          FALL_BACK_PROGRESS_WIDTH{15U};
-      Progress progress(PROGRESS_TEXT, false, Utils::get_term_width(
-          m_term, MAX_PROGRESS_WIDTH, FALL_BACK_PROGRESS_WIDTH));
-      progress.show();
-
-      project = Project(project_dir);
+      project = make_unique<Project>(instantiate_project(project_dir));
     } catch (const exception& e) {
       cerr << Text::format_message(Message::ERROR,
               "Couldn't load the project: "s + e.what()) << endl;
@@ -181,19 +166,7 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
     bool is_debug_build{true};
     if (parse_result->count("type") != 0U) {
       const auto type{(*parse_result)["type"].as<string>()};
-
-      if (type.empty()) {
-        cerr << "Build type must not be empty"_err << endl;
-        return EXIT_FAILURE;
-      }
-
-      const auto type_len{type.length()};
-      // Allow first N characters of build type.
-      if ("release"s.substr(0U, type_len) == type) {
-        is_debug_build = false;
-      } else if ("debug"s.substr(0U, type_len) != type) {
-        cerr << "Build type must be either "
-                "<u>d~d~ebug<r> or <u>r~d~elease<r>"_err << endl;
+      if (!parse_build_type(type, is_debug_build)) {
         return EXIT_FAILURE;
       }
     }
@@ -205,7 +178,7 @@ auto Apm::run(int& t_argc, char** t_argv) -> int {
     }
 
     try {
-      return project.build(*this, is_debug_build, output_apk);
+      return project->build(*this, is_debug_build, output_apk);
     } catch (const exception& e) {
       cerr << Text::format_message(Message::ERROR,
               "Couldn't build the project: "s + e.what()) << endl;
@@ -301,7 +274,7 @@ void Apm::set_release_jks(const path& t_path) const {
   } while (!Utils::check_cin());
 
   cout << "Does the private key <u>have a password<r>?"_fmt << endl;
-  const auto key_has_passwd{Utils::request_confirm()};
+  const auto key_has_password{Utils::request_confirm()};
 
   const array<function<bool()>, 3U> apply_funcs{
     [&] {
@@ -316,7 +289,7 @@ void Apm::set_release_jks(const path& t_path) const {
     },
     [&] {
       return m_config->apply<bool>(
-             Config::Key::JKS_KEY_HAS_PASSWD, key_has_passwd, false);
+             Config::Key::JKS_KEY_HAS_PASSWORD, key_has_password, false);
     }
   };
 
@@ -407,4 +380,39 @@ void Apm::print_versions() const {
     cout << Text::format_copy(
             "API of SDK: <b>" + to_string(*sdk_api) + "<r>") << endl;
   }
+}
+
+auto Apm::instantiate_project(const path& t_root_dir) const -> Project {
+  // Show a progress because the Project constructor deals with file system
+  // operations, performance of which depend on storage type and may be slow.
+  constexpr string_view PROGRESS_TEXT{"Loading the project"};
+  constexpr unsigned short
+      MAX_PROGRESS_WIDTH{PROGRESS_TEXT.length() + 10U},
+      FALL_BACK_PROGRESS_WIDTH{15U};
+  Progress progress(PROGRESS_TEXT, false, Utils::get_term_width(
+      m_term, MAX_PROGRESS_WIDTH, FALL_BACK_PROGRESS_WIDTH));
+  progress.show();
+
+  return Project(t_root_dir);
+}
+
+auto Apm::parse_build_type(
+    const string_view t_type, bool& t_is_debug_build) -> bool {
+  const auto type_len{t_type.length()};
+  if (type_len == 0U) {
+    cerr << "Build type must not be empty"_err << endl;
+    return false;
+  }
+
+  // Allow first type_len characters of build type.
+  if ("debug"s.substr(0U, type_len) == t_type) {
+    return t_is_debug_build = true;
+  }
+  if ("release"s.substr(0U, type_len) == t_type) {
+    t_is_debug_build = false;
+    return true;
+  }
+
+  cerr << "Build type must be either <u>debug<r> or <u>release<r>"_err << endl;
+  return false;
 }

@@ -1,5 +1,5 @@
 name: Java
-on: [push]
+on: [push, pull_request]
 env:
   TARGET_JAVA_VERSION: 8
   # Generate all debugging information.

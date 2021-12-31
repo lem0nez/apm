@@ -7,6 +7,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -14,8 +15,10 @@
 #include <fcli/terminal.hpp>
 #include <pugixml.hpp>
 
-#include "apm.hpp"
 #include "jvm.hpp"
+
+// Don't include headers within each other.
+class Apm;
 
 class Project {
 public:
@@ -61,16 +64,17 @@ public:
     _COUNT
   };
 
-  Project() = default;
   // Throws an exception on failure.
   explicit Project(const std::filesystem::path& root_dir);
-  // To build a project, instance must be initialized with a path. Returns
-  // program execution status. NOLINTNEXTLINE(modernize-use-nodiscard)
+  // Returns program execution status.
   auto build(const Apm& apm, bool is_debug_build,
              const std::filesystem::path& output_apk_copy = {},
              std::shared_ptr<const Jvm> jvm = {}) const -> int;
 
-  [[nodiscard]] auto get_app_dir(AppDir dir) const -> std::filesystem::path;
+  // Throws runtime_error if must_exist set
+  // to true and a directory doesn't exist.
+  [[nodiscard]] auto get_app_dir(AppDir dir,
+      bool must_exist = false) const -> std::filesystem::path;
   [[nodiscard]] auto get_build_dir(BuildDir dir, BuildConfig config,
       bool auto_create = true) const -> std::filesystem::path;
   [[nodiscard]] auto get_apk_path(ApkType type, BuildConfig build_config,
@@ -85,6 +89,12 @@ private:
   static constexpr std::string_view CONFIG_FILE_NAME{"apm.xml"};
   // Minimum value of the Android's minimum API level to run an application.
   static constexpr unsigned short MIN_API{21U};
+
+  // It must return program execution status.
+  using fail_func_t = int (std::string_view msg);
+  static auto check_output_apk(
+      const std::filesystem::path&, const std::function<fail_func_t>&) -> int;
+  auto check_sdk(const Apm&, const std::function<fail_func_t>&) const -> int;
 
   [[nodiscard]] static auto request_app_name() -> std::string;
   [[nodiscard]] static auto request_package() -> std::string;

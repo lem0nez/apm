@@ -19,6 +19,7 @@
 #include <libzippp/libzippp.h>
 
 #include "general/enum_array.hpp"
+#include "apm.hpp"
 #include "config.hpp"
 #include "project.hpp"
 #include "utils.hpp"
@@ -54,46 +55,69 @@ Project::Project(const path& t_root_dir) {
   m_config_root = config.document_element();
 }
 
+// --------------- +
+// Build a project |
+// --------------- +
+
 auto Project::build(const Apm& t_apm, const bool t_is_debug_build,
     const path& t_output_apk_copy, shared_ptr<const Jvm> t_jvm) const -> int {
 
-  constexpr string_view PROGRESS_TEXT{"Preparing to build"};
-  constexpr unsigned short
-      MAX_PROGRESS_WIDTH{PROGRESS_TEXT.length() + 10U},
-      FALL_BACK_PROGRESS_WIDTH{15U};
-  Progress progress(PROGRESS_TEXT, false, Utils::get_term_width(
-      t_apm.get_term(), MAX_PROGRESS_WIDTH, FALL_BACK_PROGRESS_WIDTH));
+  const auto get_progress_width{[&t_apm] {
+    constexpr unsigned short
+        MAX_WIDTH{100U},
+        FALL_BACK_WIDTH{15U};
+    return Utils::get_term_width(t_apm.get_term(), MAX_WIDTH, FALL_BACK_WIDTH);
+  }};
+  Progress progress("Preparing to build", false, get_progress_width());
   progress.show();
+
+  const auto fail_with_msg{[&progress] (const string_view msg) {
+    progress.hide();
+    cerr << Text::format_message(Message::ERROR, msg) << endl;
+    return EXIT_FAILURE;
+  }};
 
   if (!t_is_debug_build &&
       !t_apm.get_config()->get<path>(Config::Key::JKS_PATH).has_value()) {
-    progress.hide();
-    cerr << "You need to set a Java KeyStore via <b>-j<r> (<b>--set-jks<r>) "
-            "option to sign the release APK files"_err << endl;
-    return EXIT_FAILURE;
+    return fail_with_msg(
+        "You need to set a Java KeyStore via <b>-j<r> "
+        "(<b>--set-jks<r>) option to sign the release APK files");
   }
 
-  if (!t_output_apk_copy.empty()) {
-    if (is_directory(t_output_apk_copy)) {
-      progress.hide();
-      cerr << "Path of the output APK file must not be a directory"_err << endl;
-      return EXIT_FAILURE;
-    }
-    if (const auto parent_dir{t_output_apk_copy.parent_path()};
-        !(parent_dir.empty() || is_directory(parent_dir))) {
-      progress.hide();
-      cerr << Text::format_message(Message::ERROR,
-              "Parent directory \"" + parent_dir.string() +
-              "\" of the output APK file doesn't exist") << endl;
-      return EXIT_FAILURE;
-    }
+  if (const auto result{check_output_apk(t_output_apk_copy, fail_with_msg)};
+      result != EXIT_SUCCESS) {
+    return result;
+  }
+  if (const auto result{check_sdk(t_apm, fail_with_msg)};
+      result != EXIT_SUCCESS) {
+    return result;
   }
 
+  return EXIT_SUCCESS;
+}
+
+auto Project::check_output_apk(
+    const path& t_path, const function<fail_func_t>& t_fail_func) -> int {
+  if (t_path.empty()) {
+    return EXIT_SUCCESS;
+  }
+
+  if (is_directory(t_path)) {
+    return t_fail_func("Path of the output APK file must not be a directory");
+  }
+  if (const auto parent_dir{t_path.parent_path()};
+      !(parent_dir.empty() || is_directory(parent_dir))) {
+    return t_fail_func("Parent directory \"" + parent_dir.string() +
+                       "\" of the output APK file doesn't exist");
+  }
+  return EXIT_SUCCESS;
+}
+
+auto Project::check_sdk(const Apm& t_apm,
+    const function<fail_func_t>& t_fail_func) const -> int {
   const auto min_sdk_node{m_config_root.child("min-sdk")};
   if (!min_sdk_node) {
-    progress.hide();
-    cerr << "Project configuration doesn't define <u>min-sdk<r>"_err << endl;
-    return EXIT_FAILURE;
+    return t_fail_func("Project configuration doesn't define <u>min-sdk<r>");
   }
 
   const auto min_sdk_text{min_sdk_node.text()};
@@ -102,22 +126,32 @@ auto Project::build(const Apm& t_apm, const bool t_is_debug_build,
       {*t_apm.get_config()->get<unsigned short>(Config::Key::SDK)};
 
   if (min_sdk_text.as_uint() > installed_sdk_api) {
-    progress.hide();
-    cerr << Text::format_message(Message::ERROR, "At least SDK <b>"s +
-            min_sdk_text.get() + "<r> is required to build this project "
-            "(API version of the installed SDK is <b>" +
-            to_string(installed_sdk_api) + "<r>)") << endl;
-    return EXIT_FAILURE;
+    return t_fail_func("At least SDK <b>"s + min_sdk_text.get() +
+           "<r> is required to build this project "
+           "(API version of the installed SDK is <b>" +
+           to_string(installed_sdk_api) + "<r>)");
   }
-
   return EXIT_SUCCESS;
 }
 
-auto Project::get_app_dir(const AppDir t_dir) const -> path {
+// ------- +
+// Getters |
+// ------- +
+
+auto Project::get_app_dir(const AppDir t_dir,
+    const bool t_must_exist) const -> path {
   path root_dir("app");
   const EnumArray<AppDir, path>
       dirs{root_dir, root_dir / "assets", root_dir / "res", root_dir / "java"};
-  return m_dir / dirs.get(t_dir);
+
+  const auto
+      relative_path{dirs.get(t_dir)},
+      abs_path{m_dir / relative_path};
+  if (t_must_exist && !is_directory(abs_path)) {
+    throw runtime_error("project directory \"" +
+                        relative_path.string() + "\" doesn't exist");
+  }
+  return abs_path;
 }
 
 auto Project::get_build_dir(const BuildDir t_dir, const BuildConfig t_config,
@@ -150,7 +184,7 @@ auto Project::get_apk_path(
 }
 
 // ---------------- +
-// Project creation |
+// Create a project |
 // ---------------- +
 
 // TODO: ask for .gitignore.
@@ -181,12 +215,16 @@ auto Project::create(const path& t_dir, const unsigned short t_sdk_api,
                     t_term, MAX_PROGRESS_WIDTH, FALL_BACK_PROGRESS_WIDTH));
   progress.show();
 
+  const auto finish_with_err{[&] (const string_view msg) {
+    progress.finish(false, msg);
+    remove_all(t_dir, fs_err);
+    return EXIT_FAILURE;
+  }};
+
   try {
     extract_template(t_dir, t_templ_zip);
   } catch (const exception& e) {
-    progress.finish(false, "Couldn't extract a template: "s + e.what());
-    remove_all(t_dir, fs_err);
-    return EXIT_FAILURE;
+    return finish_with_err("Couldn't extract a template: "s + e.what());
   }
   progress.finish(true, "Template extracted");
 
@@ -195,9 +233,7 @@ auto Project::create(const path& t_dir, const unsigned short t_sdk_api,
   try {
     organize_resources(directory_entry(t_dir / "app" / "res"), min_api);
   } catch (const exception& e) {
-    progress.finish(false, "Couldn't organize resources: "s + e.what());
-    remove_all(t_dir, fs_err);
-    return EXIT_FAILURE;
+    return finish_with_err("Couldn't organize resources: "s + e.what());
   }
   progress.finish(true, "Resources organized");
 
@@ -209,9 +245,7 @@ auto Project::create(const path& t_dir, const unsigned short t_sdk_api,
     relocate_class(
         directory_entry(t_dir / "app" / "java"), "MainActivity.java", package);
   } catch (const exception& e) {
-    progress.finish(false, "Couldn't configure the project: "s + e.what());
-    remove_all(t_dir, fs_err);
-    return EXIT_FAILURE;
+    return finish_with_err("Couldn't configure the project: "s + e.what());
   }
   progress.finish(true, "Configuration is done");
 

@@ -157,14 +157,13 @@ auto Project::get_app_dir(const AppDir t_dir,
 auto Project::get_build_dir(const BuildDir t_dir, const BuildConfig t_config,
     const bool t_auto_create) const -> path {
 
-  constexpr string_view ROOT_DIR_NAME{"build"};
   constexpr EnumArray<BuildConfig, string_view>
       config_names{"debug", "release", "all"};
   const EnumArray<BuildDir, path> dirs{
     "flat", "apk", "r-java", "class", path("dex") / "intermediate", "dex"
   };
 
-  const auto dir{m_dir / path(ROOT_DIR_NAME) /
+  const auto dir{m_dir / path(ROOT_BUILD_DIR_NAME) /
                  path(config_names.get(t_config)) / dirs.get(t_dir)};
   if (t_auto_create) {
     create_directories(dir);
@@ -187,7 +186,6 @@ auto Project::get_apk_path(
 // Create a project |
 // ---------------- +
 
-// TODO: ask for .gitignore.
 auto Project::create(const path& t_dir, const unsigned short t_sdk_api,
                      const path& t_templ_zip, const Terminal& t_term) -> int {
   constexpr unsigned short
@@ -206,9 +204,14 @@ auto Project::create(const path& t_dir, const unsigned short t_sdk_api,
   const auto
       app_name{request_app_name()},
       package{request_package()};
+
   cout << Text::format_copy("Minimum SDK version: <b>" +
           to_string(t_sdk_api) + "<r>") << endl;
   const auto min_api{request_min_api(t_sdk_api)};
+
+  cout << "Add .gitignore?" << endl;
+  Utils::ignore_cin_line();
+  const auto gitignore_required{Utils::request_confirm(true)};
 
   cout << "\nCreating the project:" << endl;
   Progress progress("Extracting a template", false, Utils::get_term_width(
@@ -248,6 +251,18 @@ auto Project::create(const path& t_dir, const unsigned short t_sdk_api,
     return finish_with_err("Couldn't configure the project: "s + e.what());
   }
   progress.finish(true, "Configuration is done");
+
+  if (gitignore_required) {
+    progress = "Creating .gitignore";
+    progress.show();
+    try {
+      ofstream ofs(t_dir / ".gitignore");
+      ofs << string(ROOT_BUILD_DIR_NAME) + '/' << endl;
+    } catch (const exception& e) {
+      return finish_with_err("Couldn't create .gitignore: "s + e.what());
+    }
+    progress.finish(true, ".gitignore added");
+  }
 
   cout << "Project created." << endl;
   return EXIT_SUCCESS;

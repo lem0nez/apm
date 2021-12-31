@@ -86,7 +86,9 @@ public:
       const fcli::Terminal& term) -> int;
 
 private:
-  static constexpr std::string_view CONFIG_FILE_NAME{"apm.xml"};
+  static constexpr std::string_view
+      CONFIG_FILE_NAME{"apm.xml"},
+      ROOT_BUILD_DIR_NAME{"build"};
   // Minimum value of the Android's minimum API level to run an application.
   static constexpr unsigned short MIN_API{21U};
 

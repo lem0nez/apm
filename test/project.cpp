@@ -22,11 +22,12 @@
 using namespace std;
 
 TEST_CASE("Create projects") {
-  // Project properties: application name, package name, minimum API level.
+  // Project properties: application name, package name,
+  // minimum API level and whether to add .gitignore file.
   constexpr array props{
-    " \na.a\n21\n",
-    "App \u03b1\nA0.z9.Z_\n24\n",
-    "Cute name\ncom.example.cuteapp\n26\n"
+    " \na.a\n21\n\n",
+    "App \u03b1\nA0.z9.Z_\n24\nN\n",
+    "Cute name\ncom.example.cuteapp\n26\nY\n"
   };
 
   const TmpDir projects_dir;

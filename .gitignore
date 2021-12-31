@@ -5,9 +5,11 @@ build/
 # Contains compiler-specific flags.
 compile_flags.txt
 
-# Vim user configuration files.
+# User configuration files.
 .vim/
 .vimrc
+CMakeLists.txt.user
+
 # Saved workflow session.
 .session.vim
 

@@ -29,7 +29,7 @@
  */
 class Sdk {
 public:
-  static constexpr std::string_view DEBUG_KEYSTORE_PASSWD{"android"};
+  static constexpr std::string_view DEBUG_KEYSTORE_PASSWORD{"android"};
 
   enum class Tool {
     // Compiles and packages APK's resources.
@@ -110,13 +110,11 @@ private:
       install_build_tools,
       install_framework;
 
-  // NOLINTNEXTLINE(modernize-use-nodiscard)
   auto download_apm_jar(const pugi::xml_document& manifest,
       unsigned short progress_width) const -> bool;
   auto install_tzdata(
       const pugi::xml_document& manifest, TmpFile<std::ofstream>& tmp_file,
       unsigned short progress_width) const -> bool;
-  // NOLINTNEXTLINE(modernize-use-nodiscard)
   auto download_assets(const pugi::xml_document& manifest,
       unsigned short progress_width) const -> bool;
 

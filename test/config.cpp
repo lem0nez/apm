@@ -75,8 +75,8 @@ TEST_CASE("Apply configurations") {
   CHECK(config.get<path>(Config::Key::JKS_PATH) == "path");
 
   config.unbind_file();
-  REQUIRE(config.apply<bool>(Config::Key::JKS_KEY_HAS_PASSWD, true));
-  CHECK(*config.get<bool>(Config::Key::JKS_KEY_HAS_PASSWD));
+  REQUIRE(config.apply<bool>(Config::Key::JKS_KEY_HAS_PASSWORD, true));
+  CHECK(*config.get<bool>(Config::Key::JKS_KEY_HAS_PASSWORD));
 }
 
 TEST_CASE("Remove configurations") {

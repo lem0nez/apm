@@ -27,7 +27,7 @@ public:
     // used for signing the release APK files.
     JKS_PATH,
     JKS_KEY_ALIAS,
-    JKS_KEY_HAS_PASSWD,
+    JKS_KEY_HAS_PASSWORD,
 
     _COUNT
   };
@@ -54,7 +54,6 @@ public:
   auto remove(Key key, bool save_file = true) -> bool;
   // Use it if you don't want to preserve changes to file on destruction.
   inline void unbind_file() { m_file_path.clear(); }
-  // NOLINTNEXTLINE(modernize-use-nodiscard)
   auto save() const -> bool;
 
 private:
@@ -66,7 +65,7 @@ private:
   // Since this is a constexpr function, we can return a string_view object.
   [[nodiscard]] static constexpr auto get_key_name(const Key key) {
     return EnumArray<Key, std::string_view>{
-      "theme", "sdk", "jks", "jks-key", "jks-key-has-passwd"
+      "theme", "sdk", "jks", "jks-key", "jks-key-has-password"
     }.get(key);
   }
 

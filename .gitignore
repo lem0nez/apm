@@ -1,4 +1,4 @@
-build/
+build
 
 # Clang formatting is completely disabled.
 .clang-format
@@ -6,7 +6,7 @@ build/
 compile_flags.txt
 
 # User configuration files.
-.vim/
+.vim
 .vimrc
 CMakeLists.txt.user
 
